@@ -19,6 +19,7 @@ const BTN_START_ID = 'btnStart';
 const BTN_STOP_ID = 'btnStop';
 
 let validator: FaceValidator | null = null;
+let cameraStream: MediaStream | null = null;
 
 function getEl<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -58,6 +59,40 @@ function updateStatusUI(status: ValidationStatus, message: string) {
   }
 }
 
+/**
+ * Inicializa a câmera automaticamente
+ */
+async function initCamera() {
+  const video = getEl<HTMLVideoElement>(VIDEO_ID);
+  const statusEl = getEl<HTMLDivElement>(STATUS_ID);
+  const statusContainer = getEl<HTMLDivElement>(STATUS_CONTAINER_ID);
+  const btnStart = getEl<HTMLButtonElement>(BTN_START_ID);
+
+  statusContainer.classList.remove('success', 'error', 'warning');
+  statusEl.textContent = 'Solicitando acesso à câmera...';
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      video: { width: 640, height: 480, facingMode: 'user' } 
+    });
+    cameraStream = stream;
+    video.srcObject = stream;
+    await video.play();
+    
+    statusContainer.classList.remove('error');
+    statusEl.textContent = 'Câmera pronta! Clique em "Iniciar" para começar a validação.';
+    btnStart.disabled = false;
+  } catch (err) {
+    statusContainer.classList.add('error');
+    statusEl.textContent = `Erro ao acessar câmera: ${err}`;
+    btnStart.disabled = true;
+    console.error('Erro ao acessar câmera:', err);
+  }
+}
+
+/**
+ * Inicia a validação facial
+ */
 async function start() {
   const video = getEl<HTMLVideoElement>(VIDEO_ID);
   const overlay = getEl<HTMLCanvasElement>(OVERLAY_ID);
@@ -77,28 +112,20 @@ async function start() {
     validator = null;
   }
 
+  // Verificar se a câmera está ativa
+  if (!cameraStream || !video.srcObject) {
+    statusContainer.classList.add('error');
+    statusEl.textContent = 'Câmera não disponível. Recarregue a página.';
+    return;
+  }
+
   // Desabilitar botão Start, habilitar botão Stop
   btnStart.disabled = true;
   btnStop.disabled = false;
 
   // Resetar status
   statusContainer.classList.remove('success', 'error', 'warning');
-  statusEl.textContent = 'Iniciando câmera...';
-
-  // Iniciar câmera
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { width: 640, height: 480, facingMode: 'user' } 
-    });
-    video.srcObject = stream;
-    await video.play();
-  } catch (err) {
-    statusContainer.classList.add('error');
-    statusEl.textContent = `Erro ao acessar câmera: ${err}`;
-    btnStart.disabled = false;
-    btnStop.disabled = true;
-    return;
-  }
+  statusEl.textContent = 'Iniciando validação facial...';
 
   const locale = localeSelect.value as SupportedLocale;
 
@@ -139,6 +166,9 @@ async function start() {
   });
 }
 
+/**
+ * Para a validação facial (mas mantém a câmera ativa)
+ */
 function stop() {
   const btnStart = getEl<HTMLButtonElement>(BTN_START_ID);
   const btnStop = getEl<HTMLButtonElement>(BTN_STOP_ID);
@@ -150,29 +180,42 @@ function stop() {
     validator = null;
   }
   
-  // Parar câmera
-  const video = getEl<HTMLVideoElement>(VIDEO_ID);
-  const stream = video.srcObject as MediaStream;
-  if (stream) {
-    stream.getTracks().forEach(track => track.stop());
-    video.srcObject = null;
+  // Limpar o canvas overlay
+  const overlay = getEl<HTMLCanvasElement>(OVERLAY_ID);
+  const ctx = overlay.getContext('2d');
+  if (ctx) {
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
   }
   
   // Resetar status
   statusContainer.classList.remove('success', 'error', 'warning');
-  statusEl.textContent = 'Parado. Clique em "Iniciar" para começar novamente.';
+  statusEl.textContent = 'Validação parada. Câmera ainda ativa. Clique em "Iniciar" para validar novamente.';
   
   // Habilitar botão Start, desabilitar botão Stop
   btnStart.disabled = false;
   btnStop.disabled = true;
 }
 
+/**
+ * Inicializa a aplicação
+ */
 function init() {
   const btnStart = getEl<HTMLButtonElement>(BTN_START_ID);
   const btnStop = getEl<HTMLButtonElement>(BTN_STOP_ID);
   
+  // Desabilitar botão Iniciar até que a câmera esteja pronta
+  btnStart.disabled = true;
+  
   btnStart.addEventListener('click', start);
   btnStop.addEventListener('click', stop);
+  
+  // Iniciar câmera automaticamente ao carregar a página
+  initCamera();
 }
 
-init();
+// Iniciar quando o DOM estiver pronto
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
