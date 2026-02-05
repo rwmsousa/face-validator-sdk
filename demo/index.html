@@ -76,16 +76,19 @@
     }
     
     .controls {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      display: flex;
       gap: 1rem;
       margin-bottom: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
     }
     
     .control-group {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+      min-width: 180px;
+      max-width: 200px;
     }
     
     label {
@@ -396,7 +399,7 @@
       <div class="control-group">
         <label id="debugLabel">🔍 Modo Debug</label>
         <div class="checkbox-group">
-          <input type="checkbox" id="debugMode" />
+          <input type="checkbox" id="debugMode" checked />
           <label for="debugMode" id="debugCheckboxLabel" style="font-weight: normal; margin: 0;">Mostrar landmarks</label>
         </div>
       </div>
