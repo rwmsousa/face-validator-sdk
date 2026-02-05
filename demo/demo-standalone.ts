@@ -130,6 +130,40 @@ function saveThumbnail(imageDataUrl: string) {
   renderThumbnails();
 }
 
+function removeThumbnail(index: number) {
+  // Remover do array
+  capturedImages.splice(index, 1);
+  
+  // Atualizar localStorage
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(capturedImages));
+  } catch (error) {
+    console.warn('Error updating localStorage:', error);
+  }
+  
+  // Re-renderizar
+  renderThumbnails();
+}
+
+function toggleThumbnailZoom(thumbnailElement: HTMLElement) {
+  const overlay = document.getElementById('thumbnailOverlay');
+  const isZoomed = thumbnailElement.classList.contains('zoomed');
+  
+  // Remover zoom de todos os thumbnails
+  document.querySelectorAll('.thumbnail-item.zoomed').forEach(el => {
+    el.classList.remove('zoomed');
+  });
+  
+  if (isZoomed) {
+    // Estava ampliado, fechar
+    if (overlay) overlay.classList.remove('active');
+  } else {
+    // Ampliar este thumbnail
+    thumbnailElement.classList.add('zoomed');
+    if (overlay) overlay.classList.add('active');
+  }
+}
+
 function renderThumbnails() {
   const container = document.getElementById(THUMBNAILS_LIST_ID);
   if (!container) return;
@@ -144,9 +178,40 @@ function renderThumbnails() {
     img.src = imageDataUrl;
     img.alt = `Capture ${index + 1}`;
     
+    // Botão de remover (X)
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'thumbnail-remove-btn';
+    removeBtn.innerHTML = '✕';
+    removeBtn.title = 'Remover';
+    removeBtn.onclick = (e) => {
+      e.stopPropagation(); // Evitar que dispare o zoom
+      removeThumbnail(index);
+    };
+    
+    // Evento de clique para ampliar
+    thumbnailItem.onclick = (e) => {
+      // Não ampliar se clicou no botão de remover
+      if ((e.target as HTMLElement).classList.contains('thumbnail-remove-btn')) {
+        return;
+      }
+      toggleThumbnailZoom(thumbnailItem);
+    };
+    
     thumbnailItem.appendChild(img);
+    thumbnailItem.appendChild(removeBtn);
     container.appendChild(thumbnailItem);
   });
+  
+  // Fechar zoom ao clicar no overlay
+  const overlay = document.getElementById('thumbnailOverlay');
+  if (overlay) {
+    overlay.onclick = () => {
+      document.querySelectorAll('.thumbnail-item.zoomed').forEach(el => {
+        el.classList.remove('zoomed');
+      });
+      overlay.classList.remove('active');
+    };
+  }
 }
 
 function translate(key: keyof typeof translations['pt-BR']): string {
