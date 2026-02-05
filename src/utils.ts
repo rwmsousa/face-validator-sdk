@@ -187,63 +187,40 @@ export function isHeadStraight(
   
   // 2. Verificar altura total da face é plausível
   const faceHeight = chin.y - forehead.y;
-  if (faceHeight < 0.15) {
+  if (faceHeight < 0.12) {
     // Face muito "achatada" verticalmente = inclinação para trás
     return false;
   }
   
-  // 3. Verificar proporções corretas entre elementos
+  // 3. Verificar proporções corretas entre elementos (mais flexível)
   const foreheadToEyes = midEyesY - forehead.y;
   const eyesToNose = nose.y - midEyesY;
   const noseToMouth = mouthY - nose.y;
   const mouthToChin = chin.y - mouthY;
-  
-  // Proporções esperadas em face frontal:
-  // - Testa-olhos: ~20-30% da altura total
-  // - Olhos-nariz: ~10-18% da altura total
-  // - Nariz-boca: ~8-15% da altura total
-  // - Boca-queixo: ~15-25% da altura total
   
   const foreheadEyesRatio = foreheadToEyes / faceHeight;
   const eyesNoseRatio = eyesToNose / faceHeight;
   const noseMouthRatio = noseToMouth / faceHeight;
   const mouthChinRatio = mouthToChin / faceHeight;
   
-  // Validar testa-olhos (se muito pequeno = testa oculta = inclinação para trás)
-  if (foreheadEyesRatio < 0.18) {
-    return false; // Testa muito pequena ou oculta
+  // Validações mais flexíveis mas ainda rigorosas para inclinação
+  // Testa-olhos: deve estar visível (mínimo 12%)
+  if (foreheadEyesRatio < 0.12) {
+    return false; // Testa muito pequena = oculta = inclinação para trás
   }
   
-  // Validar olhos-nariz (se muito pequeno = elementos comprimidos = inclinação)
-  if (eyesNoseRatio < 0.08) {
+  // Olhos-nariz: proporção normal (5-22%)
+  if (eyesNoseRatio < 0.05 || eyesNoseRatio > 0.22) {
     return false;
   }
   
-  // Validar nariz-boca (se muito pequeno = face comprimida = inclinação)
-  if (noseMouthRatio < 0.06) {
+  // Nariz-boca: proporção normal (4-20%)
+  if (noseMouthRatio < 0.04 || noseMouthRatio > 0.20) {
     return false;
   }
   
-  // Validar boca-queixo (se muito pequeno = queixo oculto ou comprimido)
-  if (mouthChinRatio < 0.12) {
-    return false;
-  }
-  
-  // 4. Verificação adicional: nariz não pode estar muito acima dos olhos
-  if (nose.y < midEyesY) {
-    // Nariz acima dos olhos é impossível em face frontal
-    return false;
-  }
-  
-  // 5. Verificar se nariz está na posição correta (não muito longe abaixo dos olhos)
-  if (eyesNoseRatio > 0.18) {
-    // Nariz muito longe dos olhos = face esticada = inclinação para frente
-    return false;
-  }
-  
-  // 6. Verificar se boca está em posição plausível em relação ao nariz
-  if (noseMouthRatio > 0.15) {
-    // Boca muito longe do nariz = inclinação para frente
+  // Boca-queixo: queixo deve ser visível (mínimo 8%)
+  if (mouthChinRatio < 0.08) {
     return false;
   }
 
@@ -393,32 +370,68 @@ export function drawOverlay(
   ctx.lineTo(frameCenterX, frameCenterY + crosshairLength);
   ctx.stroke();
 
-  // Debug: desenhar face bounding box e landmarks
+  // Debug: desenhar face bounding box adaptável e landmarks
   if (debugMode && faceData) {
-    const bbox = faceData.boundingBox;
-    const x = bbox.xMin * frameWidth;
-    const y = bbox.yMin * frameHeight;
-    const w = bbox.width * frameWidth;
-    const h = bbox.height * frameHeight;
+    // Calcular bounding box adaptável baseado nos landmarks reais
+    const landmarks = faceData.landmarks;
+    if (landmarks.length >= 478) {
+      // Pontos importantes para definir limites da face
+      const forehead = landmarks[10];
+      const chin = landmarks[152];
+      const leftEar = landmarks[234];
+      const rightEar = landmarks[454];
+      
+      // Calcular limites da face com margem
+      const allXCoords = landmarks.map(l => l.x);
+      const allYCoords = landmarks.map(l => l.y);
+      const minX = Math.min(...allXCoords);
+      const maxX = Math.max(...allXCoords);
+      const minY = Math.min(...allYCoords);
+      const maxY = Math.max(...allYCoords);
+      
+      // Adicionar margem de 8% para incluir toda a cabeça
+      const width = maxX - minX;
+      const height = maxY - minY;
+      const margin = 0.08;
+      
+      const x = (minX - width * margin) * frameWidth;
+      const y = (minY - height * margin) * frameHeight;
+      const w = width * (1 + 2 * margin) * frameWidth;
+      const h = height * (1 + 2 * margin) * frameHeight;
 
-    // Bounding box colorido por status
-    let boxColor = 'red';
-    if (status === ValidationStatus.STAY_STILL || status === ValidationStatus.CAPTURING) {
-      boxColor = 'lime';
-    } else if (status === ValidationStatus.FACE_DETECTED) {
-      boxColor = 'yellow';
-    }
+      // Bounding box colorido por status (adaptável)
+      let boxColor = 'red';
+      if (status === ValidationStatus.STAY_STILL || status === ValidationStatus.CAPTURING) {
+        boxColor = 'lime';
+      } else if (status === ValidationStatus.FACE_DETECTED) {
+        boxColor = 'yellow';
+      }
 
-    ctx.strokeStyle = boxColor;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, w, h);
+      ctx.strokeStyle = boxColor;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, w, h);
 
-    // Desenhar nariz (ponto de referência)
-    if (faceData.landmarks.length >= 478) {
-      const nose = faceData.landmarks[MEDIAPIPE_NOSE_TIP];
+      // Desenhar pontos de referência chave
+      const nose = landmarks[MEDIAPIPE_NOSE_TIP];
+      const leftEyePoint = landmarks[MEDIAPIPE_LEFT_EYE[0]];
+      const rightEyePoint = landmarks[MEDIAPIPE_RIGHT_EYE[0]];
+      
+      // Nariz (cyan)
       ctx.fillStyle = 'cyan';
       ctx.beginPath();
       ctx.arc(nose.x * frameWidth, nose.y * frameHeight, 5, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Testa (magenta) - importante para validação de inclinação
+      ctx.fillStyle = 'magenta';
+      ctx.beginPath();
+      ctx.arc(forehead.x * frameWidth, forehead.y * frameHeight, 4, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Queixo (verde)
+      ctx.fillStyle = 'lime';
+      ctx.beginPath();
+      ctx.arc(chin.x * frameWidth, chin.y * frameHeight, 4, 0, 2 * Math.PI);
       ctx.fill();
     }
   }
