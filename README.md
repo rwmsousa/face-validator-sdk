@@ -1,103 +1,294 @@
-# face-validator-sdk
+# Face Validator SDK
 
-Real-time selfie validation SDK with face detection, optional bundled models, and i18n (pt-BR, en, es). Built on [face-api.js](https://github.com/justadudewhohacks/face-api.js).
+Real-time selfie validation SDK with face and hand detection, powered by **MediaPipe**. Detects faces, hands, and validates pose, lighting, and occlusions in real-time.
 
-## Features
+🎭 **[Live Demo](https://face-validator-sdk.vercel.app)** | 📦 [NPM Package](#installation) | 📖 [Documentation](#usage) | 🤝 [Contributing](#contributing)
 
-- **Face detection & validation**: Single face, distance, centering (nose), illumination, and stability checks.
-- **Optional model path**: Use your own model URL or omit it to use the default (see [Models](#models)).
-- **i18n**: Portuguese (pt-BR), English (en), and Spanish (es) with optional custom messages.
-- **Multiple builds**: ESM, CJS, and UMD.
+[![CI](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/ci.yml)
+[![Deploy](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/deploy-vercel.yml/badge.svg)](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/deploy-vercel.yml)
 
-## Installation
+## ✨ Features
+
+### Face Detection (478 landmarks)
+- ✅ **Distance validation**: TOO_CLOSE / TOO_FAR
+- ✅ **Centering**: Face must be centered in oval guide
+- ✅ **Head pose**: Detects tilted or turned head
+- ✅ **Illumination**: Validates proper lighting
+- ✅ **Stability**: Ensures user stays still before capture
+- ✅ **Multiple faces**: Rejects when more than one face detected
+
+### Hand Detection (NEW! 🎉)
+- ✅ **Hand near face detection**: Prevents hand covering face (obstructions)
+- ✅ **21 landmarks per hand**: High precision tracking
+- ✅ **Real-time validation**: Instant feedback
+
+### Additional Features
+- 🌐 **i18n**: Portuguese (pt-BR), English (en), Spanish (es)
+- 🎨 **Visual feedback**: Oval guide with color-coded status
+- 🐛 **Debug mode**: Visualize landmarks and bounding boxes
+- 📦 **Multiple builds**: ESM, CJS, UMD
+- 🚀 **GPU accelerated**: Powered by MediaPipe with GPU support
+
+## 📦 Installation
 
 ```bash
-npm install face-validator-sdk face-api.js
+npm install face-validator-sdk @mediapipe/tasks-vision
 ```
 
-Peer dependency: `face-api.js` (e.g. `^0.22.2`).
+**Peer dependency**: `@mediapipe/tasks-vision` (^0.10.15)
 
-## Models
+## 🚀 Quick Start
 
-The SDK uses the **Tiny** face-api.js models: `tinyFaceDetector` and `faceLandmark68TinyNet`.
-
-- **Option A – Custom URL**: Pass `modelPath` in options (e.g. your CDN or public path where the weights are served).
-- **Option B – Bundled**: Add the weight files to the `models/` folder in the package (see [face-api.js weights](https://github.com/justadudewhohacks/face-api.js/tree/master/weights)), build the package, then serve `dist/models/` from your app (e.g. at `/models/`). If you don’t set `modelPath`, the SDK uses a default base URL (e.g. `./models/` or, in ESM, one derived from `import.meta.url` when available).
-
-See `models/README.md` in the repo for how to obtain the required weight files.
-
-## Usage
-
-```js
-import FaceValidator, { ValidationStatus } from 'face-validator-sdk';
+```typescript
+import { FaceValidator, ValidationStatus } from 'face-validator-sdk';
 
 const video = document.querySelector('video');
-const overlay = document.querySelector('canvas');
+const canvas = document.querySelector('canvas');
 
 const validator = new FaceValidator({
   videoElement: video,
-  overlayCanvasElement: overlay ?? undefined,
-  locale: 'en',
-  // modelPath: '/models',  // optional; omit to use default
+  overlayCanvasElement: canvas,
+  locale: 'pt-BR', // 'pt-BR' | 'en' | 'es'
+  debugMode: false,
+  
   onStatusUpdate: (status, message) => {
     console.log(status, message);
+    // Update UI with validation status
   },
+  
   onCaptureSuccess: (blob) => {
-    // Use the captured selfie (e.g. upload, preview)
+    // Upload or preview the captured selfie
+    const url = URL.createObjectURL(blob);
+    document.querySelector('img').src = url;
   },
-  onError: (status, err) => {
-    console.error(status, err);
-  },
+  
+  onError: (errorType, error) => {
+    console.error(errorType, error);
+  }
 });
 
-await validator.start();
-// Later: validator.stop();
+// Validator starts automatically
+// To stop: validator.stop();
 ```
 
-### Options
+## 📊 Validation Status
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `videoElement` | `HTMLVideoElement` | required | Video element for the camera stream. |
-| `overlayCanvasElement` | `HTMLCanvasElement \| null` | `undefined` | Optional canvas for debug overlay. |
-| `modelPath` | `string` | default URL | Base URL for face-api.js models. |
-| `locale` | `'pt-BR' \| 'en' \| 'es'` | `'en'` | UI language. |
-| `customMessages` | `Partial<Record<ValidationStatus, string>>` | `{}` | Override messages per status. |
-| `onStatusUpdate` | `(status, message) => void` | required | Called on each status change. |
-| `onCaptureSuccess` | `(blob: Blob) => void` | required | Called with the captured image. |
-| `onError` | `(status, error) => void` | required | Called on error. |
-| `videoWidth` / `videoHeight` | `number` | 640 / 480 | Preferred video size. |
-| `minDetectionConfidence` | `number` | 0.6 | Face detection threshold (0–1). |
-| `minIlluminationThreshold` | `number` | 70 | Min brightness (0–255). |
-| `minFaceSizeFactor` / `maxFaceSizeFactor` | `number` | 0.25 / 0.65 | Face size vs frame width. |
-| `stabilizationTimeThreshold` | `number` | 1000 | Ms to stay still before capture. |
-| `noseCenteringTolerance` | `number` | 0.1 | Nose centering tolerance. |
-| `debugMode` | `boolean` | `false` | Mostra retângulo da face e ponto do nariz no overlay (a moldura e a mira central são sempre exibidas). |
+| Status | Description |
+|--------|-------------|
+| `INITIALIZING` | Loading MediaPipe models |
+| `NO_FACE_DETECTED` | No face found in frame |
+| `FACE_DETECTED` | Face detected, validating... |
+| `TOO_CLOSE` | Face too close to camera |
+| `TOO_FAR` | Face too far from camera |
+| `OFF_CENTER` | Face not centered in oval |
+| `FACE_OBSTRUCTED` | **Hand covering face or low visibility** |
+| `HEAD_NOT_STRAIGHT` | Head tilted or turned |
+| `MULTIPLE_FACES` | More than one face detected |
+| `POOR_ILLUMINATION` | Insufficient lighting |
+| `STAY_STILL` | Hold still for capture |
+| `CAPTURING` | Taking photo... |
+| `SUCCESS` | Capture successful! |
+| `ERROR` | An error occurred |
 
-## API
+## ⚙️ Configuration Options
 
-- **`FaceValidator`** – Main class. `start()`, `stop()`.
-- **`ValidationStatus`** – Enum of states (e.g. `NO_FACE_DETECTED`, `STAY_STILL`, `CAPTURING`, `SUCCESS`, `ERROR`).
-- **`getMessage(status, locale)`** – Get default message for a status and locale.
-- **`getValidationMessages(locale)`** – Get all default messages for a locale.
-- **`getLoadingModelsMessage(locale)`** – “Loading models…” for the locale.
-- **`getDefaultModelBaseUrl()`** – Default base URL used when `modelPath` is not set.
+```typescript
+interface FaceValidatorOptions {
+  // Required
+  videoElement: HTMLVideoElement;
+  onStatusUpdate: (status: ValidationStatus, message: string) => void;
+  onCaptureSuccess: (imageBlob: Blob) => void;
+  onError: (errorType: ValidationStatus, error: Error) => void;
+  
+  // Optional
+  overlayCanvasElement?: HTMLCanvasElement;
+  locale?: 'pt-BR' | 'en' | 'es'; // Default: 'en'
+  debugMode?: boolean; // Default: false
+  
+  // Validation thresholds
+  minDetectionConfidence?: number; // Default: 0.5
+  minIlluminationThreshold?: number; // Default: 70 (0-255)
+  minFaceSizeFactor?: number; // Default: 0.25
+  maxFaceSizeFactor?: number; // Default: 0.65
+  stabilizationTimeThreshold?: number; // Default: 1000ms
+  stabilityMovementThreshold?: number; // Default: 5px
+  minFaceVisibilityScore?: number; // Default: 0.5
+  maxHeadTiltDegrees?: number; // Default: 28°
+  maxHandFaceDistance?: number; // Default: 0.15 (normalized)
+  
+  // Advanced
+  modelPath?: string; // MediaPipe WASM path (auto-detected from CDN)
+  customMessages?: Partial<Record<ValidationStatus, string>>;
+}
+```
 
-## Local demo
+## 🎭 Live Demo
 
-To run the SDK in a browser and test the flow (camera, validation, capture) locally:
+### Online Demo
+Visit: **[https://face-validator-sdk.vercel.app](https://face-validator-sdk.vercel.app)**
+
+### Local Development
 
 ```bash
+# Clone the repository
+git clone https://github.com/rwmsousa/face-validator-sdk.git
+cd face-validator-sdk
+
+# Install dependencies
 npm install
+
+# Run local demo (http://localhost:8081)
 npm run dev
 ```
 
-(or `npm run demo` — same command.)
+### Build Demo for Production
 
-This starts a dev server and opens the demo in the browser. **URL:** [http://localhost:8081/](http://localhost:8081/). The terminal also prints this URL when the server is ready. Models are loaded from a public CDN, so no local weight files are required. Use **Start** to begin, allow camera access, and follow the on-screen messages; the captured image appears in the preview area.
+```bash
+# Build SDK + Demo
+npm run build
+npm run build:demo
 
-The dev server runs with **hot reload**: changes to files in `demo/` or `src/` trigger a rebuild and the browser updates automatically.
+# Demo files output to: demo/dist/
+```
 
-## License
+## 🏗️ Architecture
 
-See repository license.
+### MediaPipe Integration
+
+The SDK uses two MediaPipe models running in parallel:
+
+1. **FaceLandmarker**: 478 facial landmarks + face detection
+2. **HandLandmarker**: 21 hand landmarks per hand
+
+```
+┌─────────────────────────────────────────┐
+│         FaceValidator                   │
+├─────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌──────────────┐ │
+│  │ FaceLandmarker  │  │ HandLandmarker│ │
+│  │  (478 points)   │  │ (21 pts/hand) │ │
+│  └─────────────────┘  └──────────────┘ │
+│             ↓              ↓             │
+│  ┌──────────────────────────────────┐  │
+│  │   Validation Pipeline            │  │
+│  │  1. Distance                     │  │
+│  │  2. Centering                    │  │
+│  │  3. Face geometry                │  │
+│  │  4. Head pose                    │  │
+│  │  5. Hand proximity ⭐NEW         │  │
+│  │  6. Illumination                 │  │
+│  │  7. Stability                    │  │
+│  └──────────────────────────────────┘  │
+└─────────────────────────────────────────┘
+```
+
+## 📚 Why MediaPipe?
+
+Migrated from face-api.js (discontinued 2021) to MediaPipe (Google):
+
+| Feature | face-api.js | MediaPipe |
+|---------|-------------|-----------|
+| Landmarks | 68 points | **478 points** |
+| Hand detection | ❌ None | ✅ **21 pts/hand** |
+| Maintenance | ❌ Discontinued | ✅ Active (Google) |
+| Performance | CPU only | ✅ **GPU accelerated** |
+| Accuracy | ~60-70% | ✅ **~90-95%** |
+| Model size | ~8MB | ~15MB |
+
+## 🔧 Development
+
+### Scripts
+
+```bash
+npm run dev          # Start local dev server (webpack)
+npm run build        # Build SDK (CJS, ESM, UMD)
+npm run build:demo   # Build production demo
+npm run lint         # Run ESLint
+npm run format       # Format code with Prettier
+npm run test         # Run tests (Jest)
+```
+
+### Project Structure
+
+```
+face-validator-sdk/
+├── src/
+│   ├── FaceValidator.ts    # Main validator class
+│   ├── types.ts            # TypeScript types
+│   ├── utils.ts            # Validation functions
+│   ├── i18n.ts             # Internationalization
+│   └── index.ts            # Public API exports
+├── demo/
+│   ├── demo.ts             # Local dev demo
+│   ├── demo-standalone.ts  # Production demo
+│   └── public/
+│       └── index.html      # Demo HTML
+├── dist/                   # SDK build output
+│   ├── face-validator-sdk.esm.js
+│   ├── face-validator-sdk.cjs.js
+│   ├── face-validator-sdk.umd.js
+│   └── types/              # TypeScript declarations
+├── .github/
+│   └── workflows/
+│       ├── ci.yml          # CI/CD pipeline
+│       └── deploy-vercel.yml # Vercel deployment
+└── vercel.json             # Vercel configuration
+```
+
+## 🚀 Deployment
+
+### Vercel (Automatic)
+
+1. Connect repository to Vercel
+2. Add secrets to GitHub:
+   - `VERCEL_TOKEN`
+   - `VERCEL_ORG_ID`
+   - `VERCEL_PROJECT_ID`
+3. Push to `main` branch → auto-deploy
+
+### Manual Deployment
+
+```bash
+npm run build:demo
+# Deploy demo/dist/ to any static host
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'feat: add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+### Commit Convention
+
+We use [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation changes
+- `chore:` Maintenance tasks
+- `refactor:` Code refactoring
+- `test:` Add/update tests
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [MediaPipe](https://developers.google.com/mediapipe) by Google
+- [face-api.js](https://github.com/justadudewhohacks/face-api.js) (original inspiration)
+
+## 📞 Support
+
+- 🐛 [Report Bug](https://github.com/rwmsousa/face-validator-sdk/issues)
+- 💡 [Request Feature](https://github.com/rwmsousa/face-validator-sdk/issues)
+- 📧 Contact: [GitHub Profile](https://github.com/rwmsousa)
+
+---
+
+Made with ❤️ using MediaPipe
