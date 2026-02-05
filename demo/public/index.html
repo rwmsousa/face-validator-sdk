@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Validator SDK - Demo</title>
+  <meta name="description" content="Demo interativa do Face Validator SDK com MediaPipe - Detecção facial e de mãos em tempo real">
+  <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+    
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 2rem;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    
+    h1 {
+      font-size: 2rem;
+      color: #667eea;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+    
+    .subtitle {
+      color: #666;
+      font-size: 0.95rem;
+    }
+    
+    .tech-badges {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .badge {
+      background: #f0f0f0;
+      padding: 0.3rem 0.8rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #555;
+    }
+    
+    .badge.primary {
+      background: #667eea;
+      color: white;
+    }
+    
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #555;
+    }
+    
+    select, button {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 2px solid #e0e0e0;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    
+    select {
+      background: white;
+      cursor: pointer;
+    }
+    
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      background: #f8f8f8;
+      border-radius: 8px;
+    }
+    
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    
+    .video-container {
+      position: relative;
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto 1.5rem;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    #video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    
+    #overlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    
+    .status-container {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #status {
+      font-size: 1rem;
+      color: #555;
+      text-align: center;
+      font-weight: 500;
+    }
+    
+    .status-container.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .status-container.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .status-container.warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      flex: 1;
+      min-width: 140px;
+      cursor: pointer;
+      font-weight: 600;
+      border: none;
+      transition: all 0.2s;
+    }
+    
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    #btnStart {
+      background: #667eea;
+      color: white;
+    }
+    
+    #btnStart:hover:not(:disabled) {
+      background: #5568d3;
+    }
+    
+    #btnStop {
+      background: #ef4444;
+      color: white;
+    }
+    
+    #btnStop:hover:not(:disabled) {
+      background: #dc2626;
+    }
+    
+    .preview-container {
+      text-align: center;
+    }
+    
+    .preview-container h3 {
+      font-size: 1.1rem;
+      color: #555;
+      margin-bottom: 1rem;
+    }
+    
+    #preview img {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 12px;
+      border: 3px solid #667eea;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    
+    footer {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 2px solid #f0f0f0;
+      text-align: center;
+      color: #888;
+      font-size: 0.85rem;
+    }
+    
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    footer a:hover {
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 640px) {
+      .container {
+        padding: 1.5rem;
+      }
+      
+      h1 {
+        font-size: 1.5rem;
+      }
+      
+      .controls {
+        grid-template-columns: 1fr;
+      }
+      
+      .button-group {
+        flex-direction: column;
+      }
+      
+      button {
+        min-width: 100%;
+      }
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎭 Face Validator SDK</h1>
+      <p class="subtitle">Validação de selfie em tempo real com detecção de face e mãos</p>
+      <div class="tech-badges">
+        <span class="badge primary">MediaPipe</span>
+        <span class="badge">Face Detection</span>
+        <span class="badge">Hand Detection</span>
+        <span class="badge">TypeScript</span>
+      </div>
+    </header>
+
+    <div class="controls">
+      <div class="control-group">
+        <label for="locale">🌐 Idioma</label>
+        <select id="locale">
+          <option value="pt-BR">Português (BR)</option>
+          <option value="en">English</option>
+          <option value="es">Español</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>🔍 Modo Debug</label>
+        <div class="checkbox-group">
+          <input type="checkbox" id="debugMode" />
+          <label for="debugMode" style="font-weight: normal; margin: 0;">Mostrar landmarks</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="video-container">
+      <video id="video" width="640" height="480" autoplay playsinline muted></video>
+      <canvas id="overlay" width="640" height="480"></canvas>
+    </div>
+
+    <div class="status-container" id="statusContainer">
+      <div id="status">Clique em "Iniciar" e permita o acesso à câmera</div>
+    </div>
+
+    <div class="button-group">
+      <button id="btnStart">▶ Iniciar</button>
+      <button id="btnStop" disabled>⏹ Parar</button>
+    </div>
+
+    <div class="preview-container" id="previewContainer" style="display: none;">
+      <h3>✅ Captura realizada!</h3>
+      <div id="preview"></div>
+    </div>
+
+    <footer>
+      <p>
+        Desenvolvido com ❤️ usando 
+        <a href="https://developers.google.com/mediapipe" target="_blank">MediaPipe</a>
+        <br>
+        <a href="https://github.com/rwmsousa/face-validator-sdk" target="_blank">Ver no GitHub</a>
+      </p>
+    </footer>
+  </div>
+
+  <!-- MediaPipe Tasks Vision -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.js"></script>
+  
+  <!-- Face Validator SDK (será injetado pelo webpack) -->
+  <script src="./demo.bundle.js"></script>
+</body>
+</html>
