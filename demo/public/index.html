@@ -307,8 +307,8 @@
 <body>
   <div class="container">
     <header>
-      <h1>🎭 Face Validator SDK</h1>
-      <p class="subtitle">Validação de selfie em tempo real com detecção de face e mãos</p>
+      <h1 id="pageTitle">🎭 Face Validator SDK</h1>
+      <p class="subtitle" id="pageSubtitle">Validação de selfie em tempo real com detecção de face e mãos</p>
       <div class="tech-badges">
         <span class="badge primary">MediaPipe</span>
         <span class="badge">Face Detection</span>
@@ -319,7 +319,7 @@
 
     <div class="controls">
       <div class="control-group">
-        <label for="locale">🌐 Idioma</label>
+        <label for="locale" id="languageLabel">🌐 Idioma</label>
         <select id="locale">
           <option value="pt-BR">Português (BR)</option>
           <option value="en">English</option>
@@ -328,10 +328,10 @@
       </div>
       
       <div class="control-group">
-        <label>🔍 Modo Debug</label>
+        <label id="debugLabel">🔍 Modo Debug</label>
         <div class="checkbox-group">
           <input type="checkbox" id="debugMode" />
-          <label for="debugMode" style="font-weight: normal; margin: 0;">Mostrar landmarks</label>
+          <label for="debugMode" id="debugCheckboxLabel" style="font-weight: normal; margin: 0;">Mostrar landmarks</label>
         </div>
       </div>
     </div>
@@ -346,21 +346,20 @@
     </div>
 
     <div class="button-group">
-      <button id="btnStart" disabled>▶ Iniciar</button>
-      <button id="btnStop" disabled>⏹ Parar</button>
+      <button id="btnRetry" style="display: none;">🔄 Tentar Novamente</button>
     </div>
 
     <div class="preview-container" id="previewContainer" style="display: none;">
-      <h3>✅ Captura realizada!</h3>
+      <h3 id="previewTitle">✅ Captura realizada!</h3>
       <div id="preview"></div>
     </div>
 
     <footer>
       <p>
-        Desenvolvido com ❤️ usando 
+        <span id="footerText">Desenvolvido com ❤️ usando</span>
         <a href="https://developers.google.com/mediapipe" target="_blank">MediaPipe</a>
         <br>
-        <a href="https://github.com/rwmsousa/face-validator-sdk" target="_blank">Ver no GitHub</a>
+        <a href="https://github.com/rwmsousa/face-validator-sdk" target="_blank" id="githubLink">Ver no GitHub</a>
       </p>
     </footer>
   </div>
