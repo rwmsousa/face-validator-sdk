@@ -122,12 +122,12 @@ export function isFaceBoundingBoxInsideOval(
 }
 
 /**
- * Verifica se a cabeça está reta (sem inclinação lateral ou desvio horizontal).
- * MediaPipe: usa landmarks dos olhos e nariz.
+ * Verifica se a cabeça está reta (sem inclinação lateral, horizontal ou vertical).
+ * MediaPipe: usa landmarks dos olhos, nariz e boca.
  */
 export function isHeadStraight(
   landmarks: NormalizedLandmark[],
-  maxTiltDegrees: number = 30
+  maxTiltDegrees: number = 25
 ): boolean {
   if (landmarks.length < 478) return false;
 
@@ -135,6 +135,12 @@ export function isHeadStraight(
   const leftEye = landmarks[MEDIAPIPE_LEFT_EYE[0]]; // 33
   const rightEye = landmarks[MEDIAPIPE_RIGHT_EYE[0]]; // 263
   const nose = landmarks[MEDIAPIPE_NOSE_TIP]; // 4
+  
+  // Pontos da boca para pitch
+  const upperLip = landmarks[13]; // Lábio superior central
+  const lowerLip = landmarks[14]; // Lábio inferior central
+  const chin = landmarks[152]; // Queixo
+  const forehead = landmarks[10]; // Testa
 
   // Roll: inclinação lateral (olhos desalinhados verticalmente)
   const eyeDeltaY = Math.abs(leftEye.y - rightEye.y);
@@ -152,6 +158,31 @@ export function isHeadStraight(
   const yawRatio = Math.abs(noseOffsetX) / eyeDist;
   const yawAngleDeg = Math.atan(yawRatio) * (180 / Math.PI);
   if (yawAngleDeg > maxTiltDegrees) return false;
+
+  // Pitch: inclinação vertical (cabeça para cima/baixo)
+  // Verificar se o nariz está muito acima ou abaixo da linha dos olhos
+  const midEyesY = (leftEye.y + rightEye.y) / 2;
+  const faceHeight = Math.abs(forehead.y - chin.y);
+  if (faceHeight < 0.01) return false;
+  
+  // Distância vertical do nariz em relação aos olhos (normalizada pela altura do rosto)
+  const noseToEyesRatio = Math.abs(nose.y - midEyesY) / faceHeight;
+  
+  // Se o nariz estiver muito longe dos olhos verticalmente, a cabeça está inclinada
+  // Limite: 25% da altura do rosto (aproximadamente 22-25 graus de pitch)
+  if (noseToEyesRatio > 0.25) return false;
+  
+  // Verificação adicional: relação boca-nariz-olhos
+  const mouthY = (upperLip.y + lowerLip.y) / 2;
+  const noseToMouth = Math.abs(mouthY - nose.y);
+  const eyesToNose = Math.abs(nose.y - midEyesY);
+  
+  // Em uma face reta, a distância nariz-boca deve ser maior que nariz-olhos
+  // Se estiver inclinado para cima, essas proporções mudam drasticamente
+  if (eyesToNose > noseToMouth * 0.8) {
+    // Nariz muito próximo aos olhos em relação à boca = inclinação para cima
+    return false;
+  }
 
   return true;
 }

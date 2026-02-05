@@ -33,7 +33,7 @@ const defaultOptions = {
   stabilizationTimeThreshold: 1000,
   stabilityMovementThreshold: 5,
   minFaceVisibilityScore: 0.5,
-  maxHeadTiltDegrees: 30,
+  maxHeadTiltDegrees: 25,
   maxHandFaceDistance: 0.15,
   debugMode: false,
   locale: DEFAULT_LOCALE,
