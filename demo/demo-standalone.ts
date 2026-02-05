@@ -28,12 +28,15 @@ const translations = {
     debugLabel: '🔍 Modo Debug',
     debugCheckbox: 'Mostrar landmarks',
     retryButton: '🔄 Tentar Novamente',
+    allowCameraButton: '📷 Permitir Acesso à Câmera',
     previewTitle: '✅ Captura realizada!',
     footerText: 'Desenvolvido com ❤️ usando',
     githubLink: 'Ver no GitHub',
+    initialMessage: 'Clique no botão abaixo para permitir o acesso à câmera e iniciar a validação facial.',
     requestingCamera: 'Solicitando acesso à câmera...',
     cameraReady: 'Câmera pronta! Aguarde, iniciando validação...',
     cameraError: 'Erro ao acessar câmera',
+    permissionDenied: 'Permissão negada. Por favor, permita o acesso à câmera nas configurações do navegador e recarregue a página.',
     cameraNotAvailable: 'Câmera não disponível. Recarregue a página.',
     startingValidation: 'Iniciando validação facial...',
     captureSuccess: 'Captura realizada com sucesso!',
@@ -46,12 +49,15 @@ const translations = {
     debugLabel: '🔍 Debug Mode',
     debugCheckbox: 'Show landmarks',
     retryButton: '🔄 Try Again',
+    allowCameraButton: '📷 Allow Camera Access',
     previewTitle: '✅ Capture successful!',
     footerText: 'Developed with ❤️ using',
     githubLink: 'View on GitHub',
+    initialMessage: 'Click the button below to allow camera access and start face validation.',
     requestingCamera: 'Requesting camera access...',
     cameraReady: 'Camera ready! Please wait, starting validation...',
     cameraError: 'Error accessing camera',
+    permissionDenied: 'Permission denied. Please allow camera access in your browser settings and reload the page.',
     cameraNotAvailable: 'Camera not available. Reload the page.',
     startingValidation: 'Starting face validation...',
     captureSuccess: 'Capture successful!',
@@ -64,12 +70,15 @@ const translations = {
     debugLabel: '🔍 Modo Debug',
     debugCheckbox: 'Mostrar landmarks',
     retryButton: '🔄 Intentar Nuevamente',
+    allowCameraButton: '📷 Permitir Acceso a la Cámara',
     previewTitle: '✅ ¡Captura realizada!',
     footerText: 'Desarrollado con ❤️ usando',
     githubLink: 'Ver en GitHub',
+    initialMessage: 'Haga clic en el botón a continuación para permitir el acceso a la cámara e iniciar la validación facial.',
     requestingCamera: 'Solicitando acceso a la cámara...',
     cameraReady: 'Cámara lista! Espere, iniciando validación...',
     cameraError: 'Error al acceder a la cámara',
+    permissionDenied: 'Permiso denegado. Por favor, permita el acceso a la cámara en la configuración del navegador y recargue la página.',
     cameraNotAvailable: 'Cámara no disponible. Recargue la página.',
     startingValidation: 'Iniciando validación facial...',
     captureSuccess: '¡Captura exitosa!',
@@ -93,7 +102,9 @@ function updatePageTexts() {
   const languageLabel = document.getElementById('languageLabel');
   const debugLabel = document.getElementById('debugLabel');
   const debugCheckboxLabel = document.getElementById('debugCheckboxLabel');
-  const retryButton = getEl<HTMLButtonElement>(BTN_RETRY_ID);
+  const retryButton = document.getElementById(BTN_RETRY_ID);
+  const allowCameraButton = document.getElementById('btnAllowCamera');
+  const initialMessage = document.getElementById('initialMessage');
   const previewTitle = document.getElementById('previewTitle');
   const footerText = document.getElementById('footerText');
   const githubLink = document.getElementById('githubLink');
@@ -103,7 +114,9 @@ function updatePageTexts() {
   if (languageLabel) languageLabel.textContent = translate('languageLabel');
   if (debugLabel) debugLabel.textContent = translate('debugLabel');
   if (debugCheckboxLabel) debugCheckboxLabel.textContent = translate('debugCheckbox');
-  retryButton.textContent = translate('retryButton');
+  if (retryButton) retryButton.textContent = translate('retryButton');
+  if (allowCameraButton) allowCameraButton.textContent = translate('allowCameraButton');
+  if (initialMessage) initialMessage.textContent = translate('initialMessage');
   if (previewTitle) previewTitle.textContent = translate('previewTitle');
   if (footerText) footerText.textContent = translate('footerText');
   if (githubLink) githubLink.textContent = translate('githubLink');
@@ -137,12 +150,18 @@ function updateStatusUI(status: ValidationStatus, message: string) {
 }
 
 /**
- * Inicializa a câmera automaticamente e inicia a validação
+ * Inicializa a câmera com permissão do usuário
  */
 async function initCamera() {
   const video = getEl<HTMLVideoElement>(VIDEO_ID);
+  const allowCameraButton = document.getElementById('btnAllowCamera');
+  const initialScreen = document.getElementById('initialScreen');
 
   updateStatusUI(ValidationStatus.INITIALIZING, translate('requestingCamera'));
+
+  // Ocultar tela inicial e botão de permitir
+  if (initialScreen) initialScreen.style.display = 'none';
+  if (allowCameraButton) allowCameraButton.style.display = 'none';
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -158,10 +177,18 @@ async function initCamera() {
     setTimeout(() => {
       startValidation();
     }, 500);
-  } catch (err) {
-    const error = err as Error;
-    updateStatusUI(ValidationStatus.ERROR, `${translate('cameraError')}: ${error.message}`);
+  } catch (err: any) {
+    // Verificar tipo de erro
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      updateStatusUI(ValidationStatus.ERROR, translate('permissionDenied'));
+    } else {
+      updateStatusUI(ValidationStatus.ERROR, `${translate('cameraError')}: ${err.message}`);
+    }
+    
     console.error('Erro ao acessar câmera:', err);
+    
+    // Mostrar botão novamente para tentar de novo
+    if (allowCameraButton) allowCameraButton.style.display = 'block';
   }
 }
 
@@ -277,14 +304,20 @@ function changeLanguage() {
  * Inicializa a aplicação
  */
 function init() {
-  const btnRetry = getEl<HTMLButtonElement>(BTN_RETRY_ID);
+  const btnRetry = document.getElementById(BTN_RETRY_ID);
+  const btnAllowCamera = document.getElementById('btnAllowCamera');
   const localeSelect = getEl<HTMLSelectElement>(LOCALE_ID);
+  const initialScreen = document.getElementById('initialScreen');
   
   // Ocultar botão Retry inicialmente
-  btnRetry.style.display = 'none';
+  if (btnRetry) btnRetry.style.display = 'none';
+  
+  // Mostrar tela inicial
+  if (initialScreen) initialScreen.style.display = 'flex';
   
   // Event listeners
-  btnRetry.addEventListener('click', retry);
+  if (btnRetry) btnRetry.addEventListener('click', retry);
+  if (btnAllowCamera) btnAllowCamera.addEventListener('click', initCamera);
   localeSelect.addEventListener('change', changeLanguage);
   
   console.log('Face Validator SDK Demo initialized');
@@ -293,9 +326,6 @@ function init() {
   // Configurar idioma inicial
   currentLocale = localeSelect.value as SupportedLocale;
   updatePageTexts();
-  
-  // Iniciar câmera automaticamente ao carregar a página
-  initCamera();
 }
 
 // Inicializar quando o DOM estiver pronto

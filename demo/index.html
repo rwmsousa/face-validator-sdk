@@ -139,6 +139,53 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
     
+    .initial-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      padding: 2rem;
+      z-index: 10;
+    }
+    
+    .initial-screen-message {
+      color: white;
+      text-align: center;
+      font-size: 1rem;
+      line-height: 1.6;
+      max-width: 400px;
+    }
+    
+    #btnAllowCamera {
+      background: #667eea;
+      color: white;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    #btnAllowCamera:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+    
+    #btnAllowCamera:active {
+      transform: translateY(0);
+    }
+    
     #video {
       width: 100%;
       height: auto;
@@ -358,6 +405,14 @@
     <div class="video-container">
       <video id="video" width="640" height="480" autoplay playsinline muted></video>
       <canvas id="overlay" width="640" height="480"></canvas>
+      
+      <!-- Tela inicial com botão de permissão -->
+      <div class="initial-screen" id="initialScreen">
+        <div class="initial-screen-message" id="initialMessage">
+          Clique no botão abaixo para permitir o acesso à câmera e iniciar a validação facial.
+        </div>
+        <button id="btnAllowCamera">📷 Permitir Acesso à Câmera</button>
+      </div>
     </div>
 
     <div class="status-container" id="statusContainer">
