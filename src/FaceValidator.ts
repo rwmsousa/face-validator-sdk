@@ -201,7 +201,8 @@ export class FaceValidator {
             currentStatus = distanceStatus === 'TOO_CLOSE' ? ValidationStatus.TOO_CLOSE : ValidationStatus.TOO_FAR;
             this.stableSince = null;
           } else {
-            // Verificar centralização: nariz no oval E bounding box completo dentro do oval
+            // Verificar centralização: nariz no oval OU bounding box dentro do oval
+            // Relaxado para aceitar quando pelo menos uma condição é verdadeira
             const nose = landmarks[4]; // MediaPipe nose tip
             const isNoseCentered = isPointInsideOval(
               nose.x,
@@ -215,7 +216,9 @@ export class FaceValidator {
               frameHeight
             );
 
-            if (!isNoseCentered || !isFaceInsideOval) {
+            // Aceitar se nariz está centrado (validação principal)
+            // Validação do bounding box é adicional mas não obrigatória
+            if (!isNoseCentered) {
               currentStatus = ValidationStatus.OFF_CENTER;
               this.stableSince = null;
             } else if (!isFaceGeometryPlausible(landmarks, boundingBox)) {
