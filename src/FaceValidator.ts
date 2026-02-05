@@ -15,6 +15,7 @@ import {
   isHeadStraight,
   isFaceGeometryPlausible,
   isPointInsideOval,
+  isFaceBoundingBoxInsideOval,
   isHandNearFace,
   drawOverlay,
 } from './utils';
@@ -200,7 +201,7 @@ export class FaceValidator {
             currentStatus = distanceStatus === 'TOO_CLOSE' ? ValidationStatus.TOO_CLOSE : ValidationStatus.TOO_FAR;
             this.stableSince = null;
           } else {
-            // Verificar centralização (nariz no oval)
+            // Verificar centralização: nariz no oval E bounding box completo dentro do oval
             const nose = landmarks[4]; // MediaPipe nose tip
             const isNoseCentered = isPointInsideOval(
               nose.x,
@@ -208,8 +209,13 @@ export class FaceValidator {
               frameWidth,
               frameHeight
             );
+            const isFaceInsideOval = isFaceBoundingBoxInsideOval(
+              boundingBox,
+              frameWidth,
+              frameHeight
+            );
 
-            if (!isNoseCentered) {
+            if (!isNoseCentered || !isFaceInsideOval) {
               currentStatus = ValidationStatus.OFF_CENTER;
               this.stableSince = null;
             } else if (!isFaceGeometryPlausible(landmarks, boundingBox)) {

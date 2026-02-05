@@ -48,9 +48,10 @@ const MEDIAPIPE_MOUTH_OUTER = [61, 291, 0, 17, 39, 269, 270, 409];
 
 /**
  * Proporções do oval da moldura para centralização.
+ * Aumentado para garantir que toda a face caiba dentro do oval.
  */
-const OVAL_RADIUS_X_FACTOR = 0.18;
-const OVAL_RADIUS_Y_FACTOR = 0.34;
+const OVAL_RADIUS_X_FACTOR = 0.22; // Antes: 0.18
+const OVAL_RADIUS_Y_FACTOR = 0.38; // Antes: 0.34
 
 /**
  * Verifica se um ponto (normalizado 0-1) está dentro do oval de enquadramento.
@@ -71,6 +72,53 @@ export function isPointInsideOval(
   const dx = (px - cx) / rx;
   const dy = (py - cy) / ry;
   return dx * dx + dy * dy <= 1;
+}
+
+/**
+ * Verifica se o bounding box da face cabe dentro do oval de enquadramento.
+ * Usa margem de segurança para garantir que toda a cabeça seja capturada.
+ */
+export function isFaceBoundingBoxInsideOval(
+  boundingBox: BoundingBox,
+  frameWidth: number,
+  frameHeight: number
+): boolean {
+  const cx = frameWidth / 2;
+  const cy = frameHeight / 2;
+  const rx = frameWidth * OVAL_RADIUS_X_FACTOR;
+  const ry = frameHeight * OVAL_RADIUS_Y_FACTOR;
+
+  // Converter bbox normalizado para pixels
+  const faceLeft = boundingBox.xMin * frameWidth;
+  const faceRight = (boundingBox.xMin + boundingBox.width) * frameWidth;
+  const faceTop = boundingBox.yMin * frameHeight;
+  const faceBottom = (boundingBox.yMin + boundingBox.height) * frameHeight;
+
+  // Adicionar margem de 10% para garantir que não corte a cabeça
+  const margin = 0.1;
+  const faceWidth = faceRight - faceLeft;
+  const faceHeight = faceBottom - faceTop;
+  const marginX = faceWidth * margin;
+  const marginY = faceHeight * margin;
+
+  // Verificar se os 4 cantos (com margem) estão dentro do oval
+  const corners = [
+    { x: faceLeft - marginX, y: faceTop - marginY }, // Top-left
+    { x: faceRight + marginX, y: faceTop - marginY }, // Top-right
+    { x: faceLeft - marginX, y: faceBottom + marginY }, // Bottom-left
+    { x: faceRight + marginX, y: faceBottom + marginY }, // Bottom-right
+  ];
+
+  // Todos os cantos devem estar dentro do oval
+  for (const corner of corners) {
+    const dx = (corner.x - cx) / rx;
+    const dy = (corner.y - cy) / ry;
+    if (dx * dx + dy * dy > 1) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
