@@ -272,10 +272,6 @@ async function startValidation() {
   const statusContainer = getEl<HTMLDivElement>(STATUS_CONTAINER_ID);
   const debugCheckbox = getEl<HTMLInputElement>(DEBUG_ID);
   const btnRetry = getEl<HTMLButtonElement>(BTN_RETRY_ID);
-  const previewContainer = getEl<HTMLDivElement>(PREVIEW_CONTAINER_ID);
-
-  // Ocultar preview anterior
-  previewContainer.style.display = 'none';
 
   if (validator) {
     validator.stop();
@@ -334,7 +330,6 @@ async function startValidation() {
 function retry() {
   const statusEl = getEl<HTMLDivElement>(STATUS_ID);
   const statusContainer = getEl<HTMLDivElement>(STATUS_CONTAINER_ID);
-  const previewContainer = getEl<HTMLDivElement>(PREVIEW_CONTAINER_ID);
 
   if (validator) {
     validator.stop();
@@ -347,9 +342,6 @@ function retry() {
   if (ctx) {
     ctx.clearRect(0, 0, overlay.width, overlay.height);
   }
-  
-  // Ocultar preview
-  previewContainer.style.display = 'none';
   
   // Resetar status
   statusContainer.classList.remove('success', 'error', 'warning');

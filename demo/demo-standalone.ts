@@ -257,7 +257,6 @@ async function startValidation() {
   const overlay = getEl<HTMLCanvasElement>(OVERLAY_ID);
   const debugCheckbox = getEl<HTMLInputElement>(DEBUG_ID);
   const btnRetry = getEl<HTMLButtonElement>(BTN_RETRY_ID);
-  const previewContainer = getEl<HTMLDivElement>(PREVIEW_CONTAINER_ID);
 
   if (validator) {
     validator.stop();
@@ -272,9 +271,6 @@ async function startValidation() {
 
   // Ocultar botão Retry durante validação
   btnRetry.style.display = 'none';
-
-  // Esconder preview anterior
-  previewContainer.style.display = 'none';
 
   updateStatusUI(ValidationStatus.INITIALIZING, translate('startingValidation'));
 
@@ -321,8 +317,6 @@ async function startValidation() {
  * Reinicia a validação facial (para a validação atual e inicia uma nova)
  */
 function retry() {
-  const previewContainer = getEl<HTMLDivElement>(PREVIEW_CONTAINER_ID);
-
   if (validator) {
     validator.stop();
     validator = null;
@@ -334,9 +328,6 @@ function retry() {
   if (ctx) {
     ctx.clearRect(0, 0, overlay.width, overlay.height);
   }
-  
-  // Ocultar preview
-  previewContainer.style.display = 'none';
   
   updateStatusUI(ValidationStatus.INITIALIZING, translate('validationStopped'));
   
