@@ -23,8 +23,8 @@ export function calculateAverageBrightness(imageData: ImageData): number {
  */
 export function checkFaceDistance(
   boundingBox: BoundingBox,
-  minFaceSizeFactor: number = 0.25,
-  maxFaceSizeFactor: number = 0.65
+  minFaceSizeFactor: number = 0.18,
+  maxFaceSizeFactor: number = 0.70
 ): 'OK' | 'TOO_FAR' | 'TOO_CLOSE' {
   // boundingBox.width é normalizado (0-1)
   const faceWidthRatio = boundingBox.width;
@@ -50,8 +50,8 @@ const MEDIAPIPE_MOUTH_OUTER = [61, 291, 0, 17, 39, 269, 270, 409];
  * Proporções do oval da moldura para centralização.
  * Aumentado para garantir que toda a face caiba dentro do oval.
  */
-const OVAL_RADIUS_X_FACTOR = 0.22; // Antes: 0.18
-const OVAL_RADIUS_Y_FACTOR = 0.38; // Antes: 0.34
+const OVAL_RADIUS_X_FACTOR = 0.24; // Aumentado para aceitar cabeças maiores
+const OVAL_RADIUS_Y_FACTOR = 0.42; // Aumentado para aceitar cabeças maiores
 
 /**
  * Verifica se um ponto (normalizado 0-1) está dentro do oval de enquadramento.
@@ -94,8 +94,8 @@ export function isFaceBoundingBoxInsideOval(
   const faceTop = boundingBox.yMin * frameHeight;
   const faceBottom = (boundingBox.yMin + boundingBox.height) * frameHeight;
 
-  // Adicionar margem de 10% para garantir que não corte a cabeça
-  const margin = 0.1;
+  // Adicionar margem de 5% para garantir que não corte a cabeça (reduzido de 10%)
+  const margin = 0.05;
   const faceWidth = faceRight - faceLeft;
   const faceHeight = faceBottom - faceTop;
   const marginX = faceWidth * margin;
@@ -127,7 +127,7 @@ export function isFaceBoundingBoxInsideOval(
  */
 export function isHeadStraight(
   landmarks: NormalizedLandmark[],
-  maxTiltDegrees: number = 28
+  maxTiltDegrees: number = 30
 ): boolean {
   if (landmarks.length < 478) return false;
 
@@ -180,12 +180,12 @@ export function isFaceGeometryPlausible(
   // Boca deve estar abaixo do nariz
   if (mouthCenterY <= nose.y) return false;
 
-  // Distância nariz–centro da boca: mínimo 12% da altura (mão comprime)
+  // Distância nariz–centro da boca: mínimo 10% da altura (reduzido de 12% para aceitar óculos)
   const noseToMouthDist = mouthCenterY - nose.y;
-  if (noseToMouthDist < 0.12 * boxHeight) return false;
+  if (noseToMouthDist < 0.10 * boxHeight) return false;
 
-  // Extensão vertical da boca: mínimo 3.5% da altura
-  if (mouthVerticalSpread < 0.035 * boxHeight) return false;
+  // Extensão vertical da boca: mínimo 3% da altura (reduzido de 3.5%)
+  if (mouthVerticalSpread < 0.03 * boxHeight) return false;
 
   return true;
 }
@@ -197,8 +197,8 @@ export function isFaceStable(
   currentFace: DetectedFaceData | null,
   previousFace: DetectedFaceData | null,
   movementThreshold: number = 5,
-  frameWidth: number = 640,
-  frameHeight: number = 480
+  frameWidth: number = 512,
+  frameHeight: number = 384
 ): boolean {
   if (!currentFace || !previousFace) return false;
 
