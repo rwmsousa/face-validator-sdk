@@ -11,15 +11,18 @@ const VIDEO_ID = 'video';
 const OVERLAY_ID = 'overlay';
 const STATUS_ID = 'status';
 const STATUS_CONTAINER_ID = 'statusContainer';
-const PREVIEW_ID = 'preview';
-const PREVIEW_CONTAINER_ID = 'previewContainer';
+const THUMBNAILS_LIST_ID = 'thumbnailsList';
 const LOCALE_ID = 'locale';
 const DEBUG_ID = 'debugMode';
 const BTN_RETRY_ID = 'btnRetry';
 
+const STORAGE_KEY = 'face-validator-captures';
+const MAX_THUMBNAILS = 3;
+
 let validator: FaceValidator | null = null;
 let cameraStream: MediaStream | null = null;
 let currentLocale: SupportedLocale = 'pt-BR';
+let capturedImages: string[] = [];
 
 // Traduções da interface
 const translations = {
@@ -92,6 +95,60 @@ function getEl<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
   if (!el) throw new Error(`Element #${id} not found`);
   return el as T;
+}
+
+// Gerenciamento de thumbnails no localStorage
+function clearStoredThumbnails() {
+  localStorage.removeItem(STORAGE_KEY);
+  capturedImages = [];
+}
+
+function loadStoredThumbnails(): string[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.warn('Error loading thumbnails from localStorage:', error);
+    return [];
+  }
+}
+
+function saveThumbnail(imageDataUrl: string) {
+  // Adicionar nova imagem no início
+  capturedImages.unshift(imageDataUrl);
+  
+  // Manter apenas as últimas 3
+  if (capturedImages.length > MAX_THUMBNAILS) {
+    capturedImages = capturedImages.slice(0, MAX_THUMBNAILS);
+  }
+  
+  // Salvar no localStorage
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(capturedImages));
+  } catch (error) {
+    console.warn('Error saving to localStorage:', error);
+  }
+  
+  renderThumbnails();
+}
+
+function renderThumbnails() {
+  const container = document.getElementById(THUMBNAILS_LIST_ID);
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  capturedImages.forEach((imageDataUrl, index) => {
+    const thumbnailItem = document.createElement('div');
+    thumbnailItem.className = 'thumbnail-item fade-in';
+    
+    const img = document.createElement('img');
+    img.src = imageDataUrl;
+    img.alt = `Capture ${index + 1}`;
+    
+    thumbnailItem.appendChild(img);
+    container.appendChild(thumbnailItem);
+  });
 }
 
 function translate(key: keyof typeof translations['pt-BR']): string {
@@ -251,16 +308,15 @@ async function startValidation() {
     onCaptureSuccess: (blob: Blob) => {
       updateStatusUI(ValidationStatus.SUCCESS, translate('captureSuccess'));
       
-      const url = URL.createObjectURL(blob);
-      const preview = getEl<HTMLDivElement>(PREVIEW_ID);
-      preview.innerHTML = '';
-      const img = document.createElement('img');
-      img.src = url;
-      img.alt = 'Captured';
-      preview.appendChild(img);
+      // Converter blob para Data URL para salvar no localStorage
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        saveThumbnail(dataUrl);
+      };
+      reader.readAsDataURL(blob);
       
-      // Mostrar container de preview e botão retry
-      previewContainer.style.display = 'block';
+      // Mostrar botão retry
       btnRetry.style.display = 'block';
     },
     onError: (errorType: ValidationStatus, error: Error) => {
@@ -325,6 +381,10 @@ function init() {
   const btnAllowCamera = document.getElementById('btnAllowCamera');
   const localeSelect = getEl<HTMLSelectElement>(LOCALE_ID);
   const initialScreen = document.getElementById('initialScreen');
+  
+  // Limpar capturas do localStorage ao carregar a página
+  clearStoredThumbnails();
+  renderThumbnails();
   
   // Ocultar botão Retry inicialmente
   if (btnRetry) btnRetry.style.display = 'none';
