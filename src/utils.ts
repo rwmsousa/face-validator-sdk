@@ -161,47 +161,89 @@ export function isHeadStraight(
 
   // Pitch: inclinação vertical (cabeça para cima/baixo)
   const midEyesY = (leftEye.y + rightEye.y) / 2;
-  const faceHeight = Math.abs(forehead.y - chin.y);
-  if (faceHeight < 0.01) return false;
-  
-  // 1. Verificar se nariz está acima dos olhos (inclinação para trás)
-  // Em coordenadas de tela, Y cresce para baixo, então nose.y < midEyesY = nariz acima
-  if (nose.y < midEyesY) {
-    // Nariz está acima da linha dos olhos = cabeça inclinada para trás
-    // Permitir apenas desvio mínimo (2% da altura)
-    const upwardOffset = (midEyesY - nose.y) / faceHeight;
-    if (upwardOffset > 0.02) return false;
-  }
-  
-  // 2. Verificar se nariz está muito abaixo dos olhos (inclinação para frente)
-  if (nose.y > midEyesY) {
-    const downwardOffset = (nose.y - midEyesY) / faceHeight;
-    if (downwardOffset > 0.15) return false;
-  }
-  
-  // 3. Verificar posição do queixo em relação aos olhos
-  // Queixo muito próximo aos olhos = cabeça inclinada para trás
-  const chinToEyesDistance = Math.abs(chin.y - midEyesY) / faceHeight;
-  if (chinToEyesDistance < 0.35) {
-    // Queixo muito próximo aos olhos = inclinação para trás
-    return false;
-  }
-  
-  // 4. Verificação de proporção nariz-boca-olhos (mais rigorosa)
   const mouthY = (upperLip.y + lowerLip.y) / 2;
-  const noseToMouth = Math.abs(mouthY - nose.y);
-  const eyesToNose = Math.abs(nose.y - midEyesY);
   
-  // Em face reta, distância nariz-boca deve ser significativamente maior que olhos-nariz
-  if (noseToMouth < eyesToNose * 1.2) {
-    // Proporções anormais = inclinação
+  // 1. CRÍTICO: Verificar ordem vertical correta dos elementos
+  // Em coordenadas de tela, Y cresce para baixo, então ordem deve ser: testa < olhos < nariz < boca < queixo
+  if (forehead.y >= midEyesY) {
+    // Testa está no mesmo nível ou ABAIXO dos olhos = ERRO GRAVE (cabeça para trás)
     return false;
   }
   
-  // 5. Verificar se testa está muito próxima dos olhos (indica inclinação para trás)
-  const foreheadToEyes = Math.abs(forehead.y - midEyesY) / faceHeight;
-  if (foreheadToEyes < 0.15) {
-    // Testa muito próxima = cabeça inclinada para trás
+  if (midEyesY >= nose.y) {
+    // Olhos estão no mesmo nível ou ABAIXO do nariz = inclinação para trás
+    return false;
+  }
+  
+  if (nose.y >= mouthY) {
+    // Nariz está no mesmo nível ou ABAIXO da boca = inclinação severa
+    return false;
+  }
+  
+  if (mouthY >= chin.y) {
+    // Boca está no mesmo nível ou ABAIXO do queixo = geometria inválida
+    return false;
+  }
+  
+  // 2. Verificar altura total da face é plausível
+  const faceHeight = chin.y - forehead.y;
+  if (faceHeight < 0.15) {
+    // Face muito "achatada" verticalmente = inclinação para trás
+    return false;
+  }
+  
+  // 3. Verificar proporções corretas entre elementos
+  const foreheadToEyes = midEyesY - forehead.y;
+  const eyesToNose = nose.y - midEyesY;
+  const noseToMouth = mouthY - nose.y;
+  const mouthToChin = chin.y - mouthY;
+  
+  // Proporções esperadas em face frontal:
+  // - Testa-olhos: ~20-30% da altura total
+  // - Olhos-nariz: ~10-18% da altura total
+  // - Nariz-boca: ~8-15% da altura total
+  // - Boca-queixo: ~15-25% da altura total
+  
+  const foreheadEyesRatio = foreheadToEyes / faceHeight;
+  const eyesNoseRatio = eyesToNose / faceHeight;
+  const noseMouthRatio = noseToMouth / faceHeight;
+  const mouthChinRatio = mouthToChin / faceHeight;
+  
+  // Validar testa-olhos (se muito pequeno = testa oculta = inclinação para trás)
+  if (foreheadEyesRatio < 0.18) {
+    return false; // Testa muito pequena ou oculta
+  }
+  
+  // Validar olhos-nariz (se muito pequeno = elementos comprimidos = inclinação)
+  if (eyesNoseRatio < 0.08) {
+    return false;
+  }
+  
+  // Validar nariz-boca (se muito pequeno = face comprimida = inclinação)
+  if (noseMouthRatio < 0.06) {
+    return false;
+  }
+  
+  // Validar boca-queixo (se muito pequeno = queixo oculto ou comprimido)
+  if (mouthChinRatio < 0.12) {
+    return false;
+  }
+  
+  // 4. Verificação adicional: nariz não pode estar muito acima dos olhos
+  if (nose.y < midEyesY) {
+    // Nariz acima dos olhos é impossível em face frontal
+    return false;
+  }
+  
+  // 5. Verificar se nariz está na posição correta (não muito longe abaixo dos olhos)
+  if (eyesNoseRatio > 0.18) {
+    // Nariz muito longe dos olhos = face esticada = inclinação para frente
+    return false;
+  }
+  
+  // 6. Verificar se boca está em posição plausível em relação ao nariz
+  if (noseMouthRatio > 0.15) {
+    // Boca muito longe do nariz = inclinação para frente
     return false;
   }
 
