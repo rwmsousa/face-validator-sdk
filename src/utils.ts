@@ -40,18 +40,33 @@ export function checkFaceDistance(
  * - Right eye: 263, 362, 386, 374
  * - Mouth: 61, 291, 0, 17 (outer lips)
  * - Face oval: contorno do rosto
+ * - Ears: left ear (234), right ear (454)
+ * - Eye iris: left (468-471), right (473-476)
+ * - Eyelids: upper left (159, 145), lower left (144, 153), upper right (386, 374), lower right (373, 380)
+ * - Mouth corners: left (61), right (291)
+ * - Lips: upper (13), lower (14)
  */
 const MEDIAPIPE_NOSE_TIP = 4;
 const MEDIAPIPE_LEFT_EYE = [33, 133, 159, 145];
 const MEDIAPIPE_RIGHT_EYE = [263, 362, 386, 374];
 const MEDIAPIPE_MOUTH_OUTER = [61, 291, 0, 17, 39, 269, 270, 409];
+const MEDIAPIPE_LEFT_EAR = 234;
+const MEDIAPIPE_RIGHT_EAR = 454;
+const MEDIAPIPE_LEFT_EYE_TOP = 159;
+const MEDIAPIPE_LEFT_EYE_BOTTOM = 144;
+const MEDIAPIPE_RIGHT_EYE_TOP = 386;
+const MEDIAPIPE_RIGHT_EYE_BOTTOM = 373;
+const MEDIAPIPE_MOUTH_LEFT_CORNER = 61;
+const MEDIAPIPE_MOUTH_RIGHT_CORNER = 291;
+const MEDIAPIPE_MOUTH_TOP = 13;
+const MEDIAPIPE_MOUTH_BOTTOM = 14;
 
 /**
  * Proporções do oval da moldura para centralização.
- * Aumentado para garantir que toda a face caiba dentro do oval.
+ * Ajustado para o tamanho do container (512x384).
  */
-const OVAL_RADIUS_X_FACTOR = 0.28; // Aumentado para aceitar cabeças maiores e dar mais espaço
-const OVAL_RADIUS_Y_FACTOR = 0.48; // Aumentado para aceitar cabeças maiores e dar mais espaço
+const OVAL_RADIUS_X_FACTOR = 0.20; // Raio horizontal do oval
+const OVAL_RADIUS_Y_FACTOR = 0.38; // Raio vertical do oval
 
 /**
  * Verifica se um ponto (normalizado 0-1) está dentro do oval de enquadramento.
@@ -96,11 +111,11 @@ export function isFaceBoundingBoxInsideOval(
   const faceCenterX = (faceLeft + faceRight) / 2;
   const faceCenterY = (faceTop + faceBottom) / 2;
 
-  // 1. Centro da face deve estar dentro do oval
+  // 1. Centro da face deve estar dentro do oval (relaxado)
   const centerDx = (faceCenterX - cx) / rx;
   const centerDy = (faceCenterY - cy) / ry;
-  if (centerDx * centerDx + centerDy * centerDy > 0.8) {
-    // Centro fora de 80% do oval
+  if (centerDx * centerDx + centerDy * centerDy > 1.0) {
+    // Centro pode estar até no limite do oval (era 0.8)
     return false;
   }
 
@@ -112,19 +127,19 @@ export function isFaceBoundingBoxInsideOval(
     { x: faceRight, y: faceBottom }, // Bottom-right
   ];
 
-  // Permitir que até 1 canto fique ligeiramente fora (mais flexível)
+  // Permitir que até 2 cantos fiquem fora (MUITO mais flexível)
   let cornersOutside = 0;
   for (const corner of corners) {
     const dx = (corner.x - cx) / rx;
     const dy = (corner.y - cy) / ry;
-    if (dx * dx + dy * dy > 1.1) {
-      // Usar 1.1 ao invés de 1.0 para dar 10% de tolerância
+    if (dx * dx + dy * dy > 1.2) {
+      // Usar 1.2 ao invés de 1.1 para dar 20% de tolerância
       cornersOutside++;
     }
   }
 
-  // Permitir até 1 canto fora (mais tolerante)
-  return cornersOutside <= 1;
+  // Permitir até 2 cantos fora (era 1)
+  return cornersOutside <= 2;
 }
 
 /**
@@ -141,7 +156,7 @@ export function isHeadStraight(
   const leftEye = landmarks[MEDIAPIPE_LEFT_EYE[0]]; // 33
   const rightEye = landmarks[MEDIAPIPE_RIGHT_EYE[0]]; // 263
   const nose = landmarks[MEDIAPIPE_NOSE_TIP]; // 4
-  
+
   // Pontos da boca para pitch
   const upperLip = landmarks[13]; // Lábio superior central
   const lowerLip = landmarks[14]; // Lábio inferior central
@@ -157,6 +172,7 @@ export function isHeadStraight(
   if (rollAngleDeg > maxTiltDegrees) return false;
 
   // Yaw: desvio horizontal (nariz deslocado do centro dos olhos)
+  // NOTA: validação adicional usando orelhas é feita em isYawAcceptable()
   const midEyesX = (leftEye.x + rightEye.x) / 2;
   const noseOffsetX = nose.x - midEyesX;
   const eyeDist = Math.abs(leftEye.x - rightEye.x);
@@ -165,68 +181,77 @@ export function isHeadStraight(
   const yawAngleDeg = Math.atan(yawRatio) * (180 / Math.PI);
   if (yawAngleDeg > maxTiltDegrees) return false;
 
+  // Validação adicional de yaw usando orelhas (mais precisa para rostos na diagonal)
+  if (!isYawAcceptable(landmarks)) return false;
+
   // Pitch: inclinação vertical (cabeça para cima/baixo)
   const midEyesY = (leftEye.y + rightEye.y) / 2;
   const mouthY = (upperLip.y + lowerLip.y) / 2;
-  
-  // 1. CRÍTICO: Verificar ordem vertical correta dos elementos
-  // Em coordenadas de tela, Y cresce para baixo, então ordem deve ser: testa < olhos < nariz < boca < queixo
-  if (forehead.y >= midEyesY) {
-    // Testa está no mesmo nível ou ABAIXO dos olhos = ERRO GRAVE (cabeça para trás)
-    return false;
-  }
-  
-  if (midEyesY >= nose.y) {
-    // Olhos estão no mesmo nível ou ABAIXO do nariz = inclinação para trás
-    return false;
-  }
-  
-  if (nose.y >= mouthY) {
-    // Nariz está no mesmo nível ou ABAIXO da boca = inclinação severa
-    return false;
-  }
-  
-  if (mouthY >= chin.y) {
-    // Boca está no mesmo nível ou ABAIXO do queixo = geometria inválida
-    return false;
-  }
-  
-  // 2. Verificar altura total da face é plausível
+
+  // Verificações SIMPLIFICADAS apenas para inclinações EXTREMAS
+  // Permitir variações naturais de postura
+
+  // 1. Verificar altura total da face é plausível
   const faceHeight = chin.y - forehead.y;
-  if (faceHeight < 0.12) {
-    // Face muito "achatada" verticalmente = inclinação para trás
+  if (faceHeight < 0.10) {
+    // Face extremamente "achatada" verticalmente = inclinação MUITO severa
     return false;
   }
-  
-  // 3. Verificar proporções corretas entre elementos (mais flexível)
+
+  // 2. Verificar apenas ordem básica dos elementos principais
+  // Apenas rejeitar casos EXTREMOS onde a ordem está completamente invertida
+
+  // Testa deve estar ACIMA dos olhos (com margem de tolerância)
+  if (forehead.y > midEyesY + 0.02) {
+    return false; // Testa abaixo dos olhos = MUITO inclinado para trás
+  }
+
+  // Olhos devem estar ACIMA do nariz (com margem)
+  if (midEyesY > nose.y + 0.02) {
+    return false; // Olhos abaixo do nariz = inclinação extrema
+  }
+
+  // Nariz deve estar ACIMA da boca (com margem)
+  if (nose.y > mouthY + 0.02) {
+    return false; // Nariz abaixo da boca = inclinação extrema
+  }
+
+  // Boca deve estar ACIMA do queixo (sempre deve ser verdade)
+  if (mouthY >= chin.y) {
+    return false; // Geometria impossível
+  }
+
+  // 3. Verificar proporções - detectar inclinações extremas
   const foreheadToEyes = midEyesY - forehead.y;
   const eyesToNose = nose.y - midEyesY;
   const noseToMouth = mouthY - nose.y;
   const mouthToChin = chin.y - mouthY;
-  
+
   const foreheadEyesRatio = foreheadToEyes / faceHeight;
   const eyesNoseRatio = eyesToNose / faceHeight;
   const noseMouthRatio = noseToMouth / faceHeight;
   const mouthChinRatio = mouthToChin / faceHeight;
-  
-  // Validações mais flexíveis mas ainda rigorosas para inclinação
-  // Testa-olhos: deve estar visível (mínimo 12%)
-  if (foreheadEyesRatio < 0.12) {
-    return false; // Testa muito pequena = oculta = inclinação para trás
-  }
-  
-  // Olhos-nariz: proporção normal (5-22%)
-  if (eyesNoseRatio < 0.05 || eyesNoseRatio > 0.22) {
+
+  // Testa-olhos:
+  // - Se MUITO GRANDE (>38%) = cabeça inclinada para FRENTE (testa dominante)
+  // - Se MUITO PEQUENO (<6%) = cabeça inclinada para TRÁS (testa oculta)
+  if (foreheadEyesRatio < 0.06 || foreheadEyesRatio > 0.38) {
     return false;
   }
-  
-  // Nariz-boca: proporção normal (4-20%)
-  if (noseMouthRatio < 0.04 || noseMouthRatio > 0.20) {
+
+  // Olhos-nariz: aceitar de 3% a 30%
+  if (eyesNoseRatio < 0.03 || eyesNoseRatio > 0.30) {
     return false;
   }
-  
-  // Boca-queixo: queixo deve ser visível (mínimo 8%)
-  if (mouthChinRatio < 0.08) {
+
+  // Nariz-boca: aceitar de 2% a 25%
+  if (noseMouthRatio < 0.02 || noseMouthRatio > 0.25) {
+    return false;
+  }
+
+  // Boca-queixo: MUITO flexível (barba pode interferir)
+  // Apenas rejeitar casos extremos
+  if (mouthChinRatio < 0.04 || mouthChinRatio > 0.38) {
     return false;
   }
 
@@ -244,7 +269,7 @@ export function isFaceGeometryPlausible(
   if (landmarks.length < 478) return false;
 
   const nose = landmarks[MEDIAPIPE_NOSE_TIP];
-  
+
   // Pontos da boca (contorno externo)
   const mouthPoints = MEDIAPIPE_MOUTH_OUTER.map(idx => landmarks[idx]);
   const mouthCenterY = mouthPoints.reduce((s, p) => s + p.y, 0) / mouthPoints.length;
@@ -254,15 +279,103 @@ export function isFaceGeometryPlausible(
 
   const boxHeight = boundingBox.height;
 
-  // Boca deve estar abaixo do nariz
-  if (mouthCenterY <= nose.y) return false;
+  // Boca deve estar abaixo do nariz (com margem de tolerância)
+  if (mouthCenterY < nose.y - 0.01) return false;
 
-  // Distância nariz–centro da boca: mínimo 10% da altura (reduzido de 12% para aceitar óculos)
+  // Distância nariz–centro da boca: mínimo 6% da altura (reduzido de 10% para aceitar barbas e óculos)
   const noseToMouthDist = mouthCenterY - nose.y;
-  if (noseToMouthDist < 0.10 * boxHeight) return false;
+  if (noseToMouthDist < 0.06 * boxHeight) return false;
 
-  // Extensão vertical da boca: mínimo 3% da altura (reduzido de 3.5%)
-  if (mouthVerticalSpread < 0.03 * boxHeight) return false;
+  // Extensão vertical da boca: mínimo 2% da altura (reduzido de 3%)
+  if (mouthVerticalSpread < 0.02 * boxHeight) return false;
+
+  return true;
+}
+
+/**
+ * Verifica se a expressão facial é neutra (sem sorriso, boca fechada, olhos abertos).
+ * Rejeita: sorriso, boca aberta, olhos fechados.
+ */
+export function isNeutralExpression(landmarks: NormalizedLandmark[]): boolean {
+  if (landmarks.length < 478) return false;
+
+  // 1. Verificar se olhos estão abertos
+  const leftEyeTop = landmarks[MEDIAPIPE_LEFT_EYE_TOP];
+  const leftEyeBottom = landmarks[MEDIAPIPE_LEFT_EYE_BOTTOM];
+  const rightEyeTop = landmarks[MEDIAPIPE_RIGHT_EYE_TOP];
+  const rightEyeBottom = landmarks[MEDIAPIPE_RIGHT_EYE_BOTTOM];
+
+  const leftEyeOpenness = Math.abs(leftEyeTop.y - leftEyeBottom.y);
+  const rightEyeOpenness = Math.abs(rightEyeTop.y - rightEyeBottom.y);
+
+  // Olhos devem estar abertos (mínimo 1% de abertura em coordenadas normalizadas)
+  if (leftEyeOpenness < 0.01 || rightEyeOpenness < 0.01) {
+    return false; // Olho(s) fechado(s)
+  }
+
+  // 2. Verificar se boca está fechada
+  const mouthTop = landmarks[MEDIAPIPE_MOUTH_TOP];
+  const mouthBottom = landmarks[MEDIAPIPE_MOUTH_BOTTOM];
+  const mouthOpenness = Math.abs(mouthTop.y - mouthBottom.y);
+
+  // Boca deve estar relativamente fechada (máximo 2.5% de abertura)
+  if (mouthOpenness > 0.025) {
+    return false; // Boca aberta
+  }
+
+  // 3. Verificar se há sorriso (cantos da boca elevados)
+  const mouthLeftCorner = landmarks[MEDIAPIPE_MOUTH_LEFT_CORNER];
+  const mouthRightCorner = landmarks[MEDIAPIPE_MOUTH_RIGHT_CORNER];
+  const nose = landmarks[MEDIAPIPE_NOSE_TIP];
+
+  // Calcular posição vertical média dos cantos da boca relativo ao nariz
+  const mouthCornersAvgY = (mouthLeftCorner.y + mouthRightCorner.y) / 2;
+  const noseMouthDistance = mouthCornersAvgY - nose.y;
+
+  // Se os cantos da boca estão muito elevados (próximos ao nariz), é sorriso
+  // Em expressão neutra, os cantos devem estar significativamente abaixo do nariz
+  if (noseMouthDistance < 0.05) {
+    return false; // Sorriso (cantos da boca elevados)
+  }
+
+  return true;
+}
+
+/**
+ * Verifica yaw (inclinação lateral) usando visibilidade das orelhas.
+ * Quando o rosto está virado para o lado, uma orelha fica mais visível que a outra.
+ */
+export function isYawAcceptable(landmarks: NormalizedLandmark[]): boolean {
+  if (landmarks.length < 478) return false;
+
+  const leftEar = landmarks[MEDIAPIPE_LEFT_EAR];
+  const rightEar = landmarks[MEDIAPIPE_RIGHT_EAR];
+  const nose = landmarks[MEDIAPIPE_NOSE_TIP];
+
+  // Calcular distância de cada orelha ao nariz (em coordenadas normalizadas)
+  const leftEarToNoseX = Math.abs(leftEar.x - nose.x);
+  const rightEarToNoseX = Math.abs(rightEar.x - nose.x);
+
+  // Calcular ratio de assimetria
+  const asymmetryRatio = leftEarToNoseX > 0.01 && rightEarToNoseX > 0.01
+    ? Math.max(leftEarToNoseX, rightEarToNoseX) / Math.min(leftEarToNoseX, rightEarToNoseX)
+    : 1.0;
+
+  // Se uma orelha está muito mais longe do nariz que a outra, o rosto está na diagonal
+  // Permitir até 40% de assimetria (1.4 ratio)
+  if (asymmetryRatio > 1.4) {
+    return false; // Rosto muito virado para o lado
+  }
+
+  // Verificar visibilidade Z (profundidade) se disponível
+  // Em MediaPipe, coordenada Z indica profundidade relativa
+  if (leftEar.z !== undefined && rightEar.z !== undefined) {
+    const zDifference = Math.abs(leftEar.z - rightEar.z);
+    // Se a diferença de profundidade é muito grande, o rosto está na diagonal
+    if (zDifference > 0.05) {
+      return false; // Rosto virado lateralmente (detectado por profundidade)
+    }
+  }
 
   return true;
 }
@@ -347,8 +460,8 @@ export function drawOverlay(
   const radiusX = frameWidth * OVAL_RADIUS_X_FACTOR;
   const radiusY = frameHeight * OVAL_RADIUS_Y_FACTOR;
 
-  // 1) Área fora do oval esmaecida
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  // 1) Área fora do oval esmaecida (mais transparente)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
   ctx.fillRect(0, 0, frameWidth, frameHeight);
   ctx.save();
   ctx.beginPath();
@@ -386,7 +499,7 @@ export function drawOverlay(
       const chin = landmarks[152];
       const leftEar = landmarks[234];
       const rightEar = landmarks[454];
-      
+
       // Calcular limites da face com margem
       const allXCoords = landmarks.map(l => l.x);
       const allYCoords = landmarks.map(l => l.y);
@@ -394,12 +507,12 @@ export function drawOverlay(
       const maxX = Math.max(...allXCoords);
       const minY = Math.min(...allYCoords);
       const maxY = Math.max(...allYCoords);
-      
+
       // Adicionar margem de 8% para incluir toda a cabeça
       const width = maxX - minX;
       const height = maxY - minY;
       const margin = 0.08;
-      
+
       const x = (minX - width * margin) * frameWidth;
       const y = (minY - height * margin) * frameHeight;
       const w = width * (1 + 2 * margin) * frameWidth;
@@ -421,19 +534,19 @@ export function drawOverlay(
       const nose = landmarks[MEDIAPIPE_NOSE_TIP];
       const leftEyePoint = landmarks[MEDIAPIPE_LEFT_EYE[0]];
       const rightEyePoint = landmarks[MEDIAPIPE_RIGHT_EYE[0]];
-      
+
       // Nariz (cyan)
       ctx.fillStyle = 'cyan';
       ctx.beginPath();
       ctx.arc(nose.x * frameWidth, nose.y * frameHeight, 5, 0, 2 * Math.PI);
       ctx.fill();
-      
+
       // Testa (magenta) - importante para validação de inclinação
       ctx.fillStyle = 'magenta';
       ctx.beginPath();
       ctx.arc(forehead.x * frameWidth, forehead.y * frameHeight, 4, 0, 2 * Math.PI);
       ctx.fill();
-      
+
       // Queixo (verde)
       ctx.fillStyle = 'lime';
       ctx.beginPath();
