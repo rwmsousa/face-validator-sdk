@@ -18,6 +18,7 @@ import {
   isFaceBoundingBoxInsideOval,
   isHandNearFace,
   isNeutralExpression,
+  hasDarkGlasses,
   drawOverlay,
 } from './utils';
 
@@ -235,6 +236,10 @@ export class FaceValidator {
             } else if (!isNeutralExpression(landmarks)) {
               // Expressão não neutra (sorriso, boca aberta, olhos fechados)
               currentStatus = ValidationStatus.NOT_NEUTRAL_EXPRESSION;
+              this.stableSince = null;
+            } else if (hasDarkGlasses(video, landmarks)) {
+              // Óculos escuros detectados
+              currentStatus = ValidationStatus.DARK_GLASSES;
               this.stableSince = null;
             } else {
               // Verificar iluminação

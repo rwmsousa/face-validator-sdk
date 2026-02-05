@@ -293,6 +293,90 @@ export function isFaceGeometryPlausible(
 }
 
 /**
+ * Detecta se a pessoa está usando óculos escuros através da análise de luminosidade dos olhos.
+ * Óculos de grau geralmente não bloqueiam completamente a luz, permitindo ver os olhos.
+ */
+export function hasDarkGlasses(
+  video: HTMLVideoElement,
+  landmarks: NormalizedLandmark[]
+): boolean {
+  if (landmarks.length < 478) return false;
+
+  try {
+    // Criar canvas temporário para capturar regiões dos olhos
+    const tempCanvas = document.createElement('canvas');
+    const ctx = tempCanvas.getContext('2d');
+    if (!ctx) return false;
+
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+
+    // Definir landmarks dos olhos (área maior que inclui região ao redor)
+    const leftEyeLandmarks = [
+      landmarks[33],  // Canto externo
+      landmarks[133], // Canto interno
+      landmarks[159], // Superior
+      landmarks[144], // Inferior
+      landmarks[145], // Centro
+    ];
+    
+    const rightEyeLandmarks = [
+      landmarks[263], // Canto externo
+      landmarks[362], // Canto interno
+      landmarks[386], // Superior
+      landmarks[373], // Inferior
+      landmarks[374], // Centro
+    ];
+
+    // Função para calcular bounding box de uma região
+    const getBoundingBox = (eyeLandmarks: NormalizedLandmark[]) => {
+      const xs = eyeLandmarks.map(l => l.x * videoWidth);
+      const ys = eyeLandmarks.map(l => l.y * videoHeight);
+      
+      const minX = Math.max(0, Math.min(...xs) - 5);
+      const maxX = Math.min(videoWidth, Math.max(...xs) + 5);
+      const minY = Math.max(0, Math.min(...ys) - 5);
+      const maxY = Math.min(videoHeight, Math.max(...ys) + 5);
+      
+      return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    };
+
+    // Função para calcular luminosidade média de uma região
+    const getRegionBrightness = (box: { x: number; y: number; width: number; height: number }) => {
+      tempCanvas.width = box.width;
+      tempCanvas.height = box.height;
+      
+      ctx.drawImage(
+        video,
+        box.x, box.y, box.width, box.height,
+        0, 0, box.width, box.height
+      );
+      
+      const imageData = ctx.getImageData(0, 0, box.width, box.height);
+      return calculateAverageBrightness(imageData);
+    };
+
+    // Analisar ambos os olhos
+    const leftEyeBox = getBoundingBox(leftEyeLandmarks);
+    const rightEyeBox = getBoundingBox(rightEyeLandmarks);
+    
+    const leftEyeBrightness = getRegionBrightness(leftEyeBox);
+    const rightEyeBrightness = getRegionBrightness(rightEyeBox);
+    
+    const avgEyeBrightness = (leftEyeBrightness + rightEyeBrightness) / 2;
+
+    // Threshold: se a região dos olhos está muito escura (< 40 em escala 0-255)
+    // isso indica óculos escuros. Óculos de grau não bloqueiam tanto a luz.
+    // Ajustado para 35 para ser mais sensível a óculos escuros
+    return avgEyeBrightness < 35;
+    
+  } catch (error) {
+    console.warn('Erro ao detectar óculos escuros:', error);
+    return false; // Em caso de erro, não bloqueia a captura
+  }
+}
+
+/**
  * Verifica se a expressão facial é neutra (sem sorriso, boca fechada, olhos abertos).
  * Rejeita: sorriso, boca aberta, olhos fechados.
  */

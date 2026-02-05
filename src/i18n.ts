@@ -16,6 +16,7 @@ const messages: Record<SupportedLocale, Record<ValidationStatus, string>> = {
     [ValidationStatus.POOR_ILLUMINATION]:
       'Procure um ambiente com boa iluminação e centralize seu rosto no centro do oval.',
     [ValidationStatus.NOT_NEUTRAL_EXPRESSION]: 'Mantenha expressão neutra: boca fechada, sem sorrir e olhos abertos.',
+    [ValidationStatus.DARK_GLASSES]: 'Remova os óculos escuros. Óculos de grau são permitidos.',
     [ValidationStatus.STAY_STILL]: 'Fique imóvel para capturar a foto',
     [ValidationStatus.CAPTURING]: 'Capturando...',
     [ValidationStatus.SUCCESS]: 'Captura realizada!',
@@ -34,6 +35,7 @@ const messages: Record<SupportedLocale, Record<ValidationStatus, string>> = {
     [ValidationStatus.POOR_ILLUMINATION]:
       'Find a well-lit environment and center your face in the oval.',
     [ValidationStatus.NOT_NEUTRAL_EXPRESSION]: 'Keep a neutral expression: mouth closed, no smiling, and eyes open.',
+    [ValidationStatus.DARK_GLASSES]: 'Remove sunglasses. Prescription glasses are allowed.',
     [ValidationStatus.STAY_STILL]: 'Stay still to capture the photo',
     [ValidationStatus.CAPTURING]: 'Capturing...',
     [ValidationStatus.SUCCESS]: 'Capture complete!',
@@ -52,6 +54,7 @@ const messages: Record<SupportedLocale, Record<ValidationStatus, string>> = {
     [ValidationStatus.POOR_ILLUMINATION]:
       'Busque un ambiente con buena iluminación y centre su rostro en el óvalo.',
     [ValidationStatus.NOT_NEUTRAL_EXPRESSION]: 'Mantenga expresión neutra: boca cerrada, sin sonreír y ojos abiertos.',
+    [ValidationStatus.DARK_GLASSES]: 'Quite las gafas de sol. Las gafas graduadas están permitidas.',
     [ValidationStatus.STAY_STILL]: 'Permanezca quieto para capturar la foto',
     [ValidationStatus.CAPTURING]: 'Capturando...',
     [ValidationStatus.SUCCESS]: '¡Captura realizada!',
