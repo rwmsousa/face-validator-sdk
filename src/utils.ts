@@ -636,6 +636,46 @@ export function drawOverlay(
       ctx.beginPath();
       ctx.arc(chin.x * frameWidth, chin.y * frameHeight, 4, 0, 2 * Math.PI);
       ctx.fill();
+      
+      // Landmarks dos olhos para visualização da detecção de óculos
+      // Olho esquerdo (amarelo)
+      ctx.fillStyle = 'yellow';
+      const leftEyeLandmarks = [
+        landmarks[33],  // Canto externo
+        landmarks[133], // Canto interno
+        landmarks[159], // Superior (pálpebra superior)
+        landmarks[144], // Inferior (pálpebra inferior)
+        landmarks[145], // Centro
+      ];
+      leftEyeLandmarks.forEach(landmark => {
+        ctx.beginPath();
+        ctx.arc(landmark.x * frameWidth, landmark.y * frameHeight, 3, 0, 2 * Math.PI);
+        ctx.fill();
+      });
+      
+      // Olho direito (amarelo)
+      ctx.fillStyle = 'yellow';
+      const rightEyeLandmarks = [
+        landmarks[263], // Canto externo
+        landmarks[362], // Canto interno
+        landmarks[386], // Superior (pálpebra superior)
+        landmarks[373], // Inferior (pálpebra inferior)
+        landmarks[374], // Centro
+      ];
+      rightEyeLandmarks.forEach(landmark => {
+        ctx.beginPath();
+        ctx.arc(landmark.x * frameWidth, landmark.y * frameHeight, 3, 0, 2 * Math.PI);
+        ctx.fill();
+      });
+      
+      // Orelhas (roxo) - usadas na detecção de yaw
+      ctx.fillStyle = 'purple';
+      ctx.beginPath();
+      ctx.arc(leftEar.x * frameWidth, leftEar.y * frameHeight, 3, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(rightEar.x * frameWidth, rightEar.y * frameHeight, 3, 0, 2 * Math.PI);
+      ctx.fill();
     }
   }
 
