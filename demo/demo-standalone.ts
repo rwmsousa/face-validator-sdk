@@ -178,7 +178,7 @@ function renderThumbnails() {
     img.src = imageDataUrl;
     img.alt = `Capture ${index + 1}`;
     
-    // Botão de remover (X)
+    // Botão de remover (X) - só no thumbnail pequeno
     const removeBtn = document.createElement('button');
     removeBtn.className = 'thumbnail-remove-btn';
     removeBtn.innerHTML = '✕';
@@ -188,21 +188,44 @@ function renderThumbnails() {
       removeThumbnail(index);
     };
     
-    // Evento de clique para ampliar
+    // Botão de fechar zoom (X) - só aparece quando ampliado
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'zoomed-close-btn';
+    closeBtn.innerHTML = '✕';
+    closeBtn.title = 'Fechar';
+    closeBtn.onclick = (e) => {
+      e.stopPropagation(); // Evitar que dispare o toggle
+      thumbnailItem.classList.remove('zoomed');
+      const overlay = document.getElementById('thumbnailOverlay');
+      if (overlay) overlay.classList.remove('active');
+    };
+    
+    // Evento de clique para ampliar (não fechar ao clicar na imagem ampliada)
     thumbnailItem.onclick = (e) => {
-      // Não ampliar se clicou no botão de remover
-      if ((e.target as HTMLElement).classList.contains('thumbnail-remove-btn')) {
+      const target = e.target as HTMLElement;
+      
+      // Não fazer nada se clicou nos botões
+      if (target.classList.contains('thumbnail-remove-btn') || 
+          target.classList.contains('zoomed-close-btn')) {
         return;
       }
+      
+      // Se já está ampliado, não fazer nada (deixar apenas o X fechar)
+      if (thumbnailItem.classList.contains('zoomed')) {
+        return;
+      }
+      
+      // Ampliar
       toggleThumbnailZoom(thumbnailItem);
     };
     
     thumbnailItem.appendChild(img);
     thumbnailItem.appendChild(removeBtn);
+    thumbnailItem.appendChild(closeBtn);
     container.appendChild(thumbnailItem);
   });
   
-  // Fechar zoom ao clicar no overlay
+  // Fechar zoom ao clicar no overlay (fora da imagem)
   const overlay = document.getElementById('thumbnailOverlay');
   if (overlay) {
     overlay.onclick = () => {
