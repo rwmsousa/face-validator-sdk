@@ -160,27 +160,48 @@ export function isHeadStraight(
   if (yawAngleDeg > maxTiltDegrees) return false;
 
   // Pitch: inclinação vertical (cabeça para cima/baixo)
-  // Verificar se o nariz está muito acima ou abaixo da linha dos olhos
   const midEyesY = (leftEye.y + rightEye.y) / 2;
   const faceHeight = Math.abs(forehead.y - chin.y);
   if (faceHeight < 0.01) return false;
   
-  // Distância vertical do nariz em relação aos olhos (normalizada pela altura do rosto)
-  const noseToEyesRatio = Math.abs(nose.y - midEyesY) / faceHeight;
+  // 1. Verificar se nariz está acima dos olhos (inclinação para trás)
+  // Em coordenadas de tela, Y cresce para baixo, então nose.y < midEyesY = nariz acima
+  if (nose.y < midEyesY) {
+    // Nariz está acima da linha dos olhos = cabeça inclinada para trás
+    // Permitir apenas desvio mínimo (2% da altura)
+    const upwardOffset = (midEyesY - nose.y) / faceHeight;
+    if (upwardOffset > 0.02) return false;
+  }
   
-  // Se o nariz estiver muito longe dos olhos verticalmente, a cabeça está inclinada
-  // Limite: 25% da altura do rosto (aproximadamente 22-25 graus de pitch)
-  if (noseToEyesRatio > 0.25) return false;
+  // 2. Verificar se nariz está muito abaixo dos olhos (inclinação para frente)
+  if (nose.y > midEyesY) {
+    const downwardOffset = (nose.y - midEyesY) / faceHeight;
+    if (downwardOffset > 0.15) return false;
+  }
   
-  // Verificação adicional: relação boca-nariz-olhos
+  // 3. Verificar posição do queixo em relação aos olhos
+  // Queixo muito próximo aos olhos = cabeça inclinada para trás
+  const chinToEyesDistance = Math.abs(chin.y - midEyesY) / faceHeight;
+  if (chinToEyesDistance < 0.35) {
+    // Queixo muito próximo aos olhos = inclinação para trás
+    return false;
+  }
+  
+  // 4. Verificação de proporção nariz-boca-olhos (mais rigorosa)
   const mouthY = (upperLip.y + lowerLip.y) / 2;
   const noseToMouth = Math.abs(mouthY - nose.y);
   const eyesToNose = Math.abs(nose.y - midEyesY);
   
-  // Em uma face reta, a distância nariz-boca deve ser maior que nariz-olhos
-  // Se estiver inclinado para cima, essas proporções mudam drasticamente
-  if (eyesToNose > noseToMouth * 0.8) {
-    // Nariz muito próximo aos olhos em relação à boca = inclinação para cima
+  // Em face reta, distância nariz-boca deve ser significativamente maior que olhos-nariz
+  if (noseToMouth < eyesToNose * 1.2) {
+    // Proporções anormais = inclinação
+    return false;
+  }
+  
+  // 5. Verificar se testa está muito próxima dos olhos (indica inclinação para trás)
+  const foreheadToEyes = Math.abs(forehead.y - midEyesY) / faceHeight;
+  if (foreheadToEyes < 0.15) {
+    // Testa muito próxima = cabeça inclinada para trás
     return false;
   }
 
