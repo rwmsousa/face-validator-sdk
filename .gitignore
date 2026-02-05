@@ -1,0 +1,13 @@
+node_modules
+dist
+*.log
+.DS_Store
+.env
+.env.local
+
+# face-api.js weight files (see models/README.md)
+models/*.shard1
+models/*-weights_manifest.json
+
+# Demo build output
+dist-demo
