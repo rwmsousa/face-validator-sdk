@@ -17,6 +17,7 @@ import {
   isPointInsideOval,
   isFaceBoundingBoxInsideOval,
   isHandNearFace,
+  isNeutralExpression,
   drawOverlay,
 } from './utils';
 
@@ -26,14 +27,14 @@ const defaultOptions = {
   overlayCanvasElement: undefined as HTMLCanvasElement | null | undefined,
   videoWidth: 512,
   videoHeight: 384,
-  minDetectionConfidence: 0.5,
-  minIlluminationThreshold: 60,
-  minFaceSizeFactor: 0.18,
-  maxFaceSizeFactor: 0.70,
+  minDetectionConfidence: 0.4,
+  minIlluminationThreshold: 50,
+  minFaceSizeFactor: 0.15,
+  maxFaceSizeFactor: 0.75,
   stabilizationTimeThreshold: 1000,
   stabilityMovementThreshold: 5,
-  minFaceVisibilityScore: 0.5,
-  maxHeadTiltDegrees: 25,
+  minFaceVisibilityScore: 0.4,
+  maxHeadTiltDegrees: 30,
   maxHandFaceDistance: 0.15,
   debugMode: false,
   locale: DEFAULT_LOCALE,
@@ -230,6 +231,10 @@ export class FaceValidator {
             } else if (handData.length > 0 && isHandNearFace(handData[0], boundingBox, this.options.maxHandFaceDistance)) {
               // Mão detectada próxima ao rosto
               currentStatus = ValidationStatus.FACE_OBSTRUCTED;
+              this.stableSince = null;
+            } else if (!isNeutralExpression(landmarks)) {
+              // Expressão não neutra (sorriso, boca aberta, olhos fechados)
+              currentStatus = ValidationStatus.NOT_NEUTRAL_EXPRESSION;
               this.stableSince = null;
             } else {
               // Verificar iluminação
