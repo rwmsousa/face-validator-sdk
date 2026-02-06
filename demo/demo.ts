@@ -90,7 +90,7 @@ const translations = {
     startingValidation: 'Iniciando validación facial...',
     captureSuccess: '¡Captura exitosa!',
     validationStopped: 'Validación detenida. Haga clic en "Intentar Nuevamente" para reiniciar.',
-    thumbnailsTitle: 'Últimas capturas',
+    thumbnailsTitle: 'Capturas recientes',
   },
 };
 
