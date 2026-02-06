@@ -39,87 +39,158 @@ npm install face-validator-sdk @mediapipe/tasks-vision
 
 ## 🚀 Quick Start
 
+### Basic Usage
+
 ```typescript
 import { FaceValidator, ValidationStatus } from 'face-validator-sdk';
 
-const video = document.querySelector('video');
-const canvas = document.querySelector('canvas');
+// Get DOM elements
+const videoElement = document.getElementById('video');
+const canvasElement = document.getElementById('overlay');
 
+// Initialize validator
 const validator = new FaceValidator({
-  videoElement: video,
-  overlayCanvasElement: canvas,
+  videoElement,
+  overlayCanvasElement: canvasElement,
   locale: 'pt-BR', // 'pt-BR' | 'en' | 'es'
-  debugMode: false,
+  debugMode: true, // Show landmarks for debugging
   
+  // Called whenever validation status changes
   onStatusUpdate: (status, message) => {
-    console.log(status, message);
-    // Update UI with validation status
+    document.getElementById('status').textContent = message;
+    console.log(`Status: ${status} - ${message}`);
   },
   
-  onCaptureSuccess: (blob) => {
-    // Upload or preview the captured selfie
-    const url = URL.createObjectURL(blob);
-    document.querySelector('img').src = url;
+  // Called when user passes all validations and photo is captured
+  onCaptureSuccess: (imageBlob) => {
+    // Image is a Blob with the captured selfie
+    const url = URL.createObjectURL(imageBlob);
+    document.getElementById('preview').src = url;
+    
+    // Send to backend
+    const formData = new FormData();
+    formData.append('selfie', imageBlob, 'selfie.jpg');
+    fetch('/api/upload-selfie', { method: 'POST', body: formData });
   },
   
+  // Called if something goes wrong
   onError: (errorType, error) => {
-    console.error(errorType, error);
+    console.error(`Validation Error: ${errorType}`, error);
+    document.getElementById('status').textContent = error.message;
   }
 });
 
-// Validator starts automatically
-// To stop: validator.stop();
+// Validator starts automatically capturing when initialized
+// To stop the validator: validator.stop();
 ```
 
-## 📊 Validation Status
+### HTML Setup
 
-| Status | Description |
-|--------|-------------|
-| `INITIALIZING` | Loading MediaPipe models |
-| `NO_FACE_DETECTED` | No face found in frame |
-| `FACE_DETECTED` | Face detected, validating... |
-| `TOO_CLOSE` | Face too close to camera |
-| `TOO_FAR` | Face too far from camera |
-| `OFF_CENTER` | Face not centered in oval |
-| `FACE_OBSTRUCTED` | **Hand covering face or low visibility** |
-| `HEAD_NOT_STRAIGHT` | Head tilted or turned |
-| `MULTIPLE_FACES` | More than one face detected |
-| `POOR_ILLUMINATION` | Insufficient lighting |
-| `STAY_STILL` | Hold still for capture |
-| `CAPTURING` | Taking photo... |
-| `SUCCESS` | Capture successful! |
-| `ERROR` | An error occurred |
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Include MediaPipe (required) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.js"></script>
+</head>
+<body>
+  <!-- Video element for camera feed (will be mirrored) -->
+  <video id="video" width="512" height="384" autoplay playsinline muted></video>
+  
+  <!-- Canvas for validation feedback (landmarks, oval guide, etc.) -->
+  <canvas id="overlay" width="512" height="384"></canvas>
+  
+  <!-- Status display -->
+  <div id="status">Loading...</div>
+  
+  <!-- Captured selfie preview -->
+  <img id="preview" alt="Captured selfie" />
+  
+  <!-- Load SDK -->
+  <script src="https://unpkg.com/face-validator-sdk@latest/dist/face-validator-sdk.umd.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
+```
+
+## 📊 Validation Checklist
+
+The SDK validates multiple conditions before capturing the selfie. Here's what each status means:
+
+| Status | Description | User Action | Validation Threshold |
+|--------|-------------|-------------|----------------------|
+| **INITIALIZING** | Loading MediaPipe models from CDN | Wait, models loading... | N/A |
+| **NO_FACE_DETECTED** | Camera is active but no face found | Move closer to camera, ensure good lighting | Requires 1 face |
+| **FACE_DETECTED** | Face detected, starting validation | Hold still for validation | Confidence > 50% |
+| **TOO_CLOSE** | Face is too large in frame (too close) | Move camera away | Face height < 65% viewport |
+| **TOO_FAR** | Face is too small in frame (too far) | Move camera closer | Face height > 25% viewport |
+| **OFF_CENTER** | Face not properly centered in oval | Center face in the oval guide | Within center zone |
+| **FACE_OBSTRUCTED** | **Hand, glasses, or low visibility** | Remove hands from face, ensure visibility | Hand distance > 15% |
+| **HEAD_NOT_STRAIGHT** | Head is tilted or turned | Face camera directly, keep head straight | Yaw/Pitch < 28° |
+| **MULTIPLE_FACES** | More than one face detected | Ensure only you are in frame | Exactly 1 face required |
+| **POOR_ILLUMINATION** | Not enough light to see face clearly | Increase lighting (natural/lamp light) | Brightness avg > 70 |
+| **STAY_STILL** | Movement detected, hold still | Stop moving, keep steady position | Movement < 5px, 1s |
+| **CAPTURING** | Validation passed, taking photo... | Keep position, don't move | Auto-capture in progress |
+| **SUCCESS** | ✅ Selfie captured successfully! | Photo saved and ready to upload | Capture completed |
+| **ERROR** | An error occurred during validation | Check camera permissions, try again | Check logs for details |
 
 ## ⚙️ Configuration Options
 
 ```typescript
 interface FaceValidatorOptions {
-  // Required
+  // ===== REQUIRED =====
   videoElement: HTMLVideoElement;
   onStatusUpdate: (status: ValidationStatus, message: string) => void;
   onCaptureSuccess: (imageBlob: Blob) => void;
   onError: (errorType: ValidationStatus, error: Error) => void;
   
-  // Optional
+  // ===== OPTIONAL =====
+  // Display
   overlayCanvasElement?: HTMLCanvasElement;
   locale?: 'pt-BR' | 'en' | 'es'; // Default: 'en'
-  debugMode?: boolean; // Default: false
+  debugMode?: boolean; // Show landmarks and bounding boxes. Default: false
   
-  // Validation thresholds
-  minDetectionConfidence?: number; // Default: 0.5
-  minIlluminationThreshold?: number; // Default: 70 (0-255)
-  minFaceSizeFactor?: number; // Default: 0.25
-  maxFaceSizeFactor?: number; // Default: 0.65
-  stabilizationTimeThreshold?: number; // Default: 1000ms
-  stabilityMovementThreshold?: number; // Default: 5px
-  minFaceVisibilityScore?: number; // Default: 0.5
-  maxHeadTiltDegrees?: number; // Default: 28°
-  maxHandFaceDistance?: number; // Default: 0.15 (normalized)
+  // Validation Thresholds
+  minDetectionConfidence?: number; // Face detection threshold. Default: 0.5 (50%)
+  minIlluminationThreshold?: number; // Minimum brightness (0-255). Default: 70
+  minFaceSizeFactor?: number; // Minimum face size relative to viewport. Default: 0.25 (25%)
+  maxFaceSizeFactor?: number; // Maximum face size relative to viewport. Default: 0.65 (65%)
+  
+  // Stability & Capture
+  stabilizationTimeThreshold?: number; // Time to hold still before capture (ms). Default: 1000
+  stabilityMovementThreshold?: number; // Max allowed movement (pixels). Default: 5
+  minFaceVisibilityScore?: number; // Minimum face visibility (0-1). Default: 0.5
+  
+  // Head Pose
+  maxHeadTiltDegrees?: number; // Maximum head tilt allowed. Default: 28°
+  
+  // Hand Detection
+  maxHandFaceDistance?: number; // Maximum hand distance from face (0-1). Default: 0.15 (normalized)
   
   // Advanced
-  modelPath?: string; // MediaPipe WASM path (auto-detected from CDN)
-  customMessages?: Partial<Record<ValidationStatus, string>>;
+  modelPath?: string; // Custom path to MediaPipe WASM models. Auto-detected from CDN.
+  customMessages?: Partial<Record<ValidationStatus, string>>; // Override status messages
 }
+```
+
+### Example with Custom Thresholds
+
+```typescript
+const validator = new FaceValidator({
+  videoElement,
+  overlayCanvasElement,
+  locale: 'pt-BR',
+  
+  // Stricter validation for high-security use cases
+  minDetectionConfidence: 0.8,     // 80% confidence required
+  minIlluminationThreshold: 100,   // Very bright required
+  maxHeadTiltDegrees: 15,          // Almost perfectly straight
+  stabilizationTimeThreshold: 2000, // 2 seconds of stillness
+  
+  onStatusUpdate,
+  onCaptureSuccess,
+  onError
+});
 ```
 
 ## 🎭 Live Demo
