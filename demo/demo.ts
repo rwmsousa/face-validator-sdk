@@ -180,63 +180,29 @@ function renderThumbnails() {
     img.src = imageDataUrl;
     img.alt = `Capture ${index + 1}`;
 
-    // Botão de remover (X) - só no thumbnail pequeno
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'thumbnail-remove-btn';
-    removeBtn.innerHTML = '✕';
-    removeBtn.title = 'Remover';
-    removeBtn.onclick = (e) => {
-      e.stopPropagation(); // Evitar que dispare o zoom
-      removeThumbnail(index);
-    };
-
-    // Botão de fechar zoom (X) - só aparece quando ampliado
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'zoomed-close-btn';
-    closeBtn.innerHTML = '✕';
-    closeBtn.title = 'Fechar';
-    closeBtn.onclick = (e) => {
-      e.stopPropagation(); // Evitar que dispare o toggle
-      thumbnailItem.classList.remove('zoomed');
-      const overlay = document.getElementById('thumbnailOverlay');
-      if (overlay) overlay.classList.remove('active');
-    };
-
-    // Evento de clique para ampliar (não fechar ao clicar na imagem ampliada)
+    // Clique no thumb: ampliar. Fechar zoom: clicar fora (overlay) ou tecla ESC.
     thumbnailItem.onclick = (e) => {
-      const target = e.target as HTMLElement;
-
-      // Não fazer nada se clicou nos botões
-      if (target.classList.contains('thumbnail-remove-btn') ||
-          target.classList.contains('zoomed-close-btn')) {
-        return;
-      }
-
-      // Se já está ampliado, não fazer nada (deixar apenas o X fechar)
-      if (thumbnailItem.classList.contains('zoomed')) {
-        return;
-      }
-
-      // Ampliar
+      if (thumbnailItem.classList.contains('zoomed')) return;
       toggleThumbnailZoom(thumbnailItem);
     };
 
     thumbnailItem.appendChild(img);
-    thumbnailItem.appendChild(removeBtn);
-    thumbnailItem.appendChild(closeBtn);
     container.appendChild(thumbnailItem);
   });
 
   // Fechar zoom ao clicar no overlay (fora da imagem)
   const overlay = document.getElementById('thumbnailOverlay');
   if (overlay) {
-    overlay.onclick = () => {
-      document.querySelectorAll('.thumbnail-item.zoomed').forEach(el => {
-        el.classList.remove('zoomed');
-      });
-      overlay.classList.remove('active');
-    };
+    overlay.onclick = () => closeThumbnailZoom();
   }
+}
+
+function closeThumbnailZoom() {
+  document.querySelectorAll('.thumbnail-item.zoomed').forEach(el => {
+    el.classList.remove('zoomed');
+  });
+  const overlay = document.getElementById('thumbnailOverlay');
+  if (overlay) overlay.classList.remove('active');
 }
 
 function translate(key: keyof typeof translations['pt-BR']): string {
@@ -476,6 +442,11 @@ function init() {
   if (btnRetry) btnRetry.addEventListener('click', retry);
   if (btnAllowCamera) btnAllowCamera.addEventListener('click', initCamera);
   localeSelect.addEventListener('change', changeLanguage);
+
+  // Tecla ESC fecha o zoom do thumb
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeThumbnailZoom();
+  });
 
   // Configurar idioma inicial
   currentLocale = localeSelect.value as SupportedLocale;
