@@ -1,17 +1,20 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [1.1.0] – 2026-02-06
 
 ### Changed
 
-- **Oval proporcional ao container**: Ajuste de `OVAL_RADIUS_Y_FACTOR` (0.38 → 0.34) para que o oval não extrapole a altura do vídeo em modais e containers com proporções variadas.
-- **Demo**: Thumbnails das últimas 3 capturas com zoom ao clicar, botão X para remover (localStorage), overlay para fechar zoom; alinhamento dos thumbnails ao topo; dois botões X distintos (remover no thumb, fechar na imagem ampliada).
+- **Oval proportional to container**: Adjusted `OVAL_RADIUS_Y_FACTOR` (0.38 → 0.34) so the oval does not overflow the video height in modals and containers with varying aspect ratios.
+- **Demo**: Last 3 captures as thumbnails with click-to-zoom, X button to remove (localStorage), overlay to close zoom; thumbnails aligned to top; two distinct X buttons (remove on thumb, close on enlarged image).
 
 ### Fixed
 
-- Oval desproporcional em integrações (ex.: modal do datasync-front) quando o canvas era exibido em containers com dimensões diferentes.
-
----
+- Oval disproportionate in integrations (e.g. datasync-front modal) when the canvas was displayed in containers with different dimensions.
 
 ## [1.0.0] – 2025-02-02
 
