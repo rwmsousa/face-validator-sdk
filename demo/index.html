@@ -326,9 +326,10 @@
       }
 
       .thumbnails-container {
-        flex-direction: row;
+        flex-direction: column;
         max-width: 100%;
         width: 100%;
+        height: auto;
         justify-content: center;
       }
 
@@ -340,6 +341,13 @@
 
       .thumbnail-item {
         max-width: 120px;
+      }
+
+      .thumbnail-item.zoomed {
+        width: 90vw;
+        height: auto;
+        max-width: 90vw;
+        max-height: 80vh;
       }
     }
 
