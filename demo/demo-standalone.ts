@@ -26,7 +26,7 @@ let capturedImages: string[] = [];
 const translations = {
   'pt-BR': {
     title: '🎭 Face Validator SDK',
-    subtitle: 'Validação de selfie em tempo real com detecção de face e mãos',
+    subtitle: 'Validação de selfie em tempo real com detecção de face',
     languageLabel: '🌐 Idioma',
     debugLabel: '🔍 Modo Debug',
     debugCheckbox: 'Mostrar landmarks',
@@ -44,10 +44,11 @@ const translations = {
     startingValidation: 'Iniciando validação facial...',
     captureSuccess: 'Captura realizada com sucesso!',
     validationStopped: 'Validação parada. Clique em "Tentar Novamente" para recomeçar.',
+    thumbnailsTitle: 'Últimas capturas',
   },
   'en': {
     title: '🎭 Face Validator SDK',
-    subtitle: 'Real-time selfie validation with face and hand detection',
+    subtitle: 'Real-time selfie validation with face detection',
     languageLabel: '🌐 Language',
     debugLabel: '🔍 Debug Mode',
     debugCheckbox: 'Show landmarks',
@@ -65,6 +66,7 @@ const translations = {
     startingValidation: 'Starting face validation...',
     captureSuccess: 'Capture successful!',
     validationStopped: 'Validation stopped. Click "Try Again" to restart.',
+    thumbnailsTitle: 'Latest captures',
   },
   'es': {
     title: '🎭 Face Validator SDK',
@@ -86,6 +88,7 @@ const translations = {
     startingValidation: 'Iniciando validación facial...',
     captureSuccess: '¡Captura exitosa!',
     validationStopped: 'Validación detenida. Haga clic en "Intentar Nuevamente" para reiniciar.',
+    thumbnailsTitle: 'Últimas capturas',
   },
 };
 
@@ -114,46 +117,33 @@ function loadStoredThumbnails(): string[] {
 function saveThumbnail(imageDataUrl: string) {
   // Adicionar nova imagem no início
   capturedImages.unshift(imageDataUrl);
-  
+
   // Manter apenas as últimas 3
   if (capturedImages.length > MAX_THUMBNAILS) {
     capturedImages = capturedImages.slice(0, MAX_THUMBNAILS);
   }
-  
+
   // Salvar no localStorage
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(capturedImages));
   } catch (error) {
     console.warn('Error saving to localStorage:', error);
   }
-  
+
   renderThumbnails();
 }
 
-function removeThumbnail(index: number) {
-  // Remover do array
-  capturedImages.splice(index, 1);
-  
-  // Atualizar localStorage
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(capturedImages));
-  } catch (error) {
-    console.warn('Error updating localStorage:', error);
-  }
-  
-  // Re-renderizar
-  renderThumbnails();
-}
+
 
 function toggleThumbnailZoom(thumbnailElement: HTMLElement) {
   const overlay = document.getElementById('thumbnailOverlay');
   const isZoomed = thumbnailElement.classList.contains('zoomed');
-  
+
   // Remover zoom de todos os thumbnails
   document.querySelectorAll('.thumbnail-item.zoomed').forEach(el => {
     el.classList.remove('zoomed');
   });
-  
+
   if (isZoomed) {
     // Estava ampliado, fechar
     if (overlay) overlay.classList.remove('active');
@@ -167,64 +157,32 @@ function toggleThumbnailZoom(thumbnailElement: HTMLElement) {
 function renderThumbnails() {
   const container = document.getElementById(THUMBNAILS_LIST_ID);
   if (!container) return;
-  
+
   container.innerHTML = '';
-  
+
   capturedImages.forEach((imageDataUrl, index) => {
     const thumbnailItem = document.createElement('div');
     thumbnailItem.className = 'thumbnail-item fade-in';
-    
+
     const img = document.createElement('img');
     img.src = imageDataUrl;
     img.alt = `Capture ${index + 1}`;
-    
-    // Botão de remover (X) - só no thumbnail pequeno
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'thumbnail-remove-btn';
-    removeBtn.innerHTML = '✕';
-    removeBtn.title = 'Remover';
-    removeBtn.onclick = (e) => {
-      e.stopPropagation(); // Evitar que dispare o zoom
-      removeThumbnail(index);
-    };
-    
-    // Botão de fechar zoom (X) - só aparece quando ampliado
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'zoomed-close-btn';
-    closeBtn.innerHTML = '✕';
-    closeBtn.title = 'Fechar';
-    closeBtn.onclick = (e) => {
-      e.stopPropagation(); // Evitar que dispare o toggle
-      thumbnailItem.classList.remove('zoomed');
-      const overlay = document.getElementById('thumbnailOverlay');
-      if (overlay) overlay.classList.remove('active');
-    };
-    
+
     // Evento de clique para ampliar (não fechar ao clicar na imagem ampliada)
     thumbnailItem.onclick = (e) => {
-      const target = e.target as HTMLElement;
-      
-      // Não fazer nada se clicou nos botões
-      if (target.classList.contains('thumbnail-remove-btn') || 
-          target.classList.contains('zoomed-close-btn')) {
-        return;
-      }
-      
-      // Se já está ampliado, não fazer nada (deixar apenas o X fechar)
+      // Se já está ampliado, não fazer nada (deixar apenas o overlay fechar)
       if (thumbnailItem.classList.contains('zoomed')) {
         return;
       }
-      
+
       // Ampliar
       toggleThumbnailZoom(thumbnailItem);
     };
-    
+
     thumbnailItem.appendChild(img);
-    thumbnailItem.appendChild(removeBtn);
-    thumbnailItem.appendChild(closeBtn);
     container.appendChild(thumbnailItem);
   });
-  
+
   // Fechar zoom ao clicar no overlay (fora da imagem)
   const overlay = document.getElementById('thumbnailOverlay');
   if (overlay) {
@@ -253,6 +211,7 @@ function updatePageTexts() {
   const previewTitle = document.getElementById('previewTitle');
   const footerText = document.getElementById('footerText');
   const githubLink = document.getElementById('githubLink');
+  const thumbnailsTitle = document.getElementById('thumbnailsTitle');
 
   if (title) title.textContent = translate('title');
   if (subtitle) subtitle.textContent = translate('subtitle');
@@ -265,17 +224,18 @@ function updatePageTexts() {
   if (previewTitle) previewTitle.textContent = translate('previewTitle');
   if (footerText) footerText.textContent = translate('footerText');
   if (githubLink) githubLink.textContent = translate('githubLink');
+  if (thumbnailsTitle) thumbnailsTitle.textContent = translate('thumbnailsTitle');
 }
 
 function updateStatusUI(status: ValidationStatus, message: string) {
   const statusEl = getEl<HTMLDivElement>(STATUS_ID);
   const containerEl = getEl<HTMLDivElement>(STATUS_CONTAINER_ID);
-  
+
   statusEl.textContent = message;
-  
+
   // Remove classes anteriores
   containerEl.classList.remove('success', 'error', 'warning');
-  
+
   // Adiciona classe baseada no status
   if (status === ValidationStatus.SUCCESS || status === ValidationStatus.CAPTURING) {
     containerEl.classList.add('success');
@@ -309,15 +269,15 @@ async function initCamera() {
   if (allowCameraButton) allowCameraButton.style.display = 'none';
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { width: 512, height: 384, facingMode: 'user' } 
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 512, height: 384, facingMode: 'user' }
     });
     cameraStream = stream;
     video.srcObject = stream;
     await video.play();
-    
+
     updateStatusUI(ValidationStatus.FACE_DETECTED, translate('cameraReady'));
-    
+
     // Iniciar validação automaticamente após 500ms
     setTimeout(() => {
       startValidation();
@@ -329,9 +289,9 @@ async function initCamera() {
     } else {
       updateStatusUI(ValidationStatus.ERROR, `${translate('cameraError')}: ${err.message}`);
     }
-    
+
     console.error('Erro ao acessar câmera:', err);
-    
+
     // Mostrar botão novamente para tentar de novo
     if (allowCameraButton) allowCameraButton.style.display = 'block';
   }
@@ -374,7 +334,7 @@ async function startValidation() {
       },
       onCaptureSuccess: (blob: Blob) => {
         updateStatusUI(ValidationStatus.SUCCESS, translate('captureSuccess'));
-        
+
         // Converter blob para Data URL para salvar no localStorage
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -382,7 +342,7 @@ async function startValidation() {
           saveThumbnail(dataUrl);
         };
         reader.readAsDataURL(blob);
-        
+
         // Mostrar botão retry
         btnRetry.style.display = 'block';
       },
@@ -409,16 +369,16 @@ function retry() {
     validator.stop();
     validator = null;
   }
-  
+
   // Limpar o canvas overlay
   const overlay = getEl<HTMLCanvasElement>(OVERLAY_ID);
   const ctx = overlay.getContext('2d');
   if (ctx) {
     ctx.clearRect(0, 0, overlay.width, overlay.height);
   }
-  
+
   updateStatusUI(ValidationStatus.INITIALIZING, translate('validationStopped'));
-  
+
   // Reiniciar validação
   startValidation();
 }
@@ -430,7 +390,7 @@ function changeLanguage() {
   const localeSelect = getEl<HTMLSelectElement>(LOCALE_ID);
   currentLocale = localeSelect.value as SupportedLocale;
   updatePageTexts();
-  
+
   // Se há um validador ativo, reiniciar com novo idioma
   if (validator) {
     retry();
@@ -445,25 +405,25 @@ function init() {
   const btnAllowCamera = document.getElementById('btnAllowCamera');
   const localeSelect = getEl<HTMLSelectElement>(LOCALE_ID);
   const initialScreen = document.getElementById('initialScreen');
-  
+
   // Limpar capturas do localStorage ao carregar a página
   clearStoredThumbnails();
   renderThumbnails();
-  
+
   // Ocultar botão Retry inicialmente
   if (btnRetry) btnRetry.style.display = 'none';
-  
+
   // Mostrar tela inicial
   if (initialScreen) initialScreen.style.display = 'flex';
-  
+
   // Event listeners
   if (btnRetry) btnRetry.addEventListener('click', retry);
   if (btnAllowCamera) btnAllowCamera.addEventListener('click', initCamera);
   localeSelect.addEventListener('change', changeLanguage);
-  
+
   console.log('Face Validator SDK Demo initialized');
   console.log('MediaPipe version: using CDN');
-  
+
   // Configurar idioma inicial
   currentLocale = localeSelect.value as SupportedLocale;
   updatePageTexts();
