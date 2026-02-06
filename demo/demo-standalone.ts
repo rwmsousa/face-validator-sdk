@@ -421,6 +421,20 @@ function init() {
   if (btnAllowCamera) btnAllowCamera.addEventListener('click', initCamera);
   localeSelect.addEventListener('change', changeLanguage);
 
+  // Fechar zoom ao pressionar ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const zoomed = document.querySelector('.thumbnail-item.zoomed');
+      const overlay = document.getElementById('thumbnailOverlay');
+      if (zoomed) {
+        zoomed.classList.remove('zoomed');
+      }
+      if (overlay) {
+        overlay.classList.remove('active');
+      }
+    }
+  });
+
   console.log('Face Validator SDK Demo initialized');
   console.log('MediaPipe version: using CDN');
 
