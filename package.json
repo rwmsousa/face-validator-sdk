@@ -2,6 +2,8 @@
   "name": "face-validator-sdk",
   "version": "1.0.0",
   "description": "Real-time selfie validation SDK with face detection, i18n (pt-BR, en, es). Built on MediaPipe.",
+  "license": "MIT",
+  "author": "rwmsousa",
   "main": "dist/face-validator-sdk.cjs.js",
   "module": "dist/face-validator-sdk.esm.js",
   "browser": "dist/face-validator-sdk.umd.js",
@@ -75,5 +77,9 @@
   },
   "engines": {
     "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rwmsousa/face-validator-sdk.git"
   }
 }
