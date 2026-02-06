@@ -80,6 +80,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rwmsousa/face-validator-sdk.git"
+    "url": "git+https://github.com/rwmsousa/face-validator-sdk.git"
   }
 }
