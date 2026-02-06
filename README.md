@@ -17,7 +17,7 @@ Real-time selfie validation SDK with face detection, powered by **MediaPipe**. D
 - ✅ **Stability**: Ensures user stays still before capture
 - ✅ **Multiple faces**: Rejects when more than one face detected
 
-### Hand Detection (NEW! 🎉)
+### Hand Detection
 - ✅ **Hand near face detection**: Prevents hand covering face (obstructions)
 - ✅ **21 landmarks per hand**: High precision tracking
 - ✅ **Real-time validation**: Instant feedback
@@ -32,10 +32,10 @@ Real-time selfie validation SDK with face detection, powered by **MediaPipe**. D
 ## 📦 Installation
 
 ```bash
-npm install face-validator-sdk @mediapipe/tasks-vision
+npm install face-validator-sdk
 ```
 
-**Peer dependency**: `@mediapipe/tasks-vision` (^0.10.15)
+The SDK automatically includes `@mediapipe/tasks-vision` as a dependency.
 
 ## 🚀 Quick Start
 
@@ -90,15 +90,23 @@ const validator = new FaceValidator({
 <!DOCTYPE html>
 <html>
 <head>
-  <!-- Include MediaPipe (required) -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Validator SDK</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 20px; }
+    #status { margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 4px; }
+    #preview { max-width: 300px; border-radius: 8px; margin-top: 20px; }
+  </style>
 </head>
 <body>
+  <h1>Face Validator SDK Demo</h1>
+  
   <!-- Video element for camera feed (will be mirrored) -->
   <video id="video" width="512" height="384" autoplay playsinline muted></video>
   
   <!-- Canvas for validation feedback (landmarks, oval guide, etc.) -->
-  <canvas id="overlay" width="512" height="384"></canvas>
+  <canvas id="overlay" width="512" height="384" style="border: 1px solid #ccc;"></canvas>
   
   <!-- Status display -->
   <div id="status">Loading...</div>
@@ -106,9 +114,8 @@ const validator = new FaceValidator({
   <!-- Captured selfie preview -->
   <img id="preview" alt="Captured selfie" />
   
-  <!-- Load SDK -->
-  <script src="https://unpkg.com/face-validator-sdk@latest/dist/face-validator-sdk.umd.js"></script>
-  <script src="./app.js"></script>
+  <!-- Load SDK (MediaPipe models are loaded automatically) -->
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
 ```
@@ -253,18 +260,6 @@ The SDK uses two MediaPipe models running in parallel:
 └─────────────────────────────────────────┘
 ```
 
-## 📚 Why MediaPipe?
-
-Migrated from face-api.js (discontinued 2021) to MediaPipe (Google):
-
-| Feature | face-api.js | MediaPipe |
-|---------|-------------|-----------|
-| Landmarks | 68 points | **478 points** |
-| Hand detection | ❌ None | ✅ **21 pts/hand** |
-| Maintenance | ❌ Discontinued | ✅ Active (Google) |
-| Performance | CPU only | ✅ **GPU accelerated** |
-| Accuracy | ~60-70% | ✅ **~90-95%** |
-| Model size | ~8MB | ~15MB |
 
 ## 🔧 Development
 
