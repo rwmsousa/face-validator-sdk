@@ -4,12 +4,10 @@ Real-time selfie validation SDK with face detection, powered by **MediaPipe**. D
 
 🎭 **[Live Demo](https://face-validator-sdk.vercel.app)** | 📦 [NPM Package](#installation) | 📖 [Documentation](#usage) | 🤝 [Contributing](#contributing)
 
-[![CI](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/ci.yml)
-[![Deploy](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/deploy-vercel.yml/badge.svg)](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/deploy-vercel.yml)
-
 ## ✨ Features
 
 ### Face Detection (478 landmarks)
+
 - ✅ **Distance validation**: TOO_CLOSE / TOO_FAR
 - ✅ **Centering**: Face must be centered in oval guide
 - ✅ **Head pose**: Detects tilted or turned head
@@ -18,11 +16,13 @@ Real-time selfie validation SDK with face detection, powered by **MediaPipe**. D
 - ✅ **Multiple faces**: Rejects when more than one face detected
 
 ### Hand Detection
+
 - ✅ **Hand near face detection**: Prevents hand covering face (obstructions)
 - ✅ **21 landmarks per hand**: High precision tracking
 - ✅ **Real-time validation**: Instant feedback
 
 ### Additional Features
+
 - 🌐 **i18n**: Portuguese (pt-BR), English (en), Spanish (es)
 - 🎨 **Visual feedback**: Oval guide with color-coded status
 - 🐛 **Debug mode**: Visualize landmarks and bounding boxes
@@ -36,6 +36,27 @@ npm install face-validator-sdk
 ```
 
 The SDK automatically includes `@mediapipe/tasks-vision` as a dependency.
+
+## 📊 Validation Checklist
+
+The SDK validates multiple conditions before capturing the selfie. Here's what each status means:
+
+| Status | Description | User Action | Validation Threshold |
+|--------|-------------|-------------|----------------------|
+| **INITIALIZING** | Loading MediaPipe models from CDN | Wait, models loading... | N/A |
+| **NO_FACE_DETECTED** | Camera is active but no face found | Move closer to camera, ensure good lighting | Requires 1 face |
+| **FACE_DETECTED** | Face detected, starting validation | Hold still for validation | Confidence > 50% |
+| **TOO_CLOSE** | Face is too large in frame (too close) | Move camera away | Face height < 65% viewport |
+| **TOO_FAR** | Face is too small in frame (too far) | Move camera closer | Face height > 25% viewport |
+| **OFF_CENTER** | Face not properly centered in oval | Center face in the oval guide | Within center zone |
+| **FACE_OBSTRUCTED** | **Hand, glasses, or low visibility** | Remove hands from face, ensure visibility | Hand distance > 15% |
+| **HEAD_NOT_STRAIGHT** | Head is tilted or turned | Face camera directly, keep head straight | Yaw/Pitch < 28° |
+| **MULTIPLE_FACES** | More than one face detected | Ensure only you are in frame | Exactly 1 face required |
+| **POOR_ILLUMINATION** | Not enough light to see face clearly | Increase lighting (natural/lamp light) | Brightness avg > 70 |
+| **STAY_STILL** | Movement detected, hold still | Stop moving, keep steady position | Movement < 5px, 1s |
+| **CAPTURING** | Validation passed, taking photo... | Keep position, don't move | Auto-capture in progress |
+| **SUCCESS** | ✅ Selfie captured successfully! | Photo saved and ready to upload | Capture completed |
+| **ERROR** | An error occurred during validation | Check camera permissions, try again | Check logs for details |
 
 ## 🚀 Quick Start
 
@@ -120,27 +141,6 @@ const validator = new FaceValidator({
 </html>
 ```
 
-## 📊 Validation Checklist
-
-The SDK validates multiple conditions before capturing the selfie. Here's what each status means:
-
-| Status | Description | User Action | Validation Threshold |
-|--------|-------------|-------------|----------------------|
-| **INITIALIZING** | Loading MediaPipe models from CDN | Wait, models loading... | N/A |
-| **NO_FACE_DETECTED** | Camera is active but no face found | Move closer to camera, ensure good lighting | Requires 1 face |
-| **FACE_DETECTED** | Face detected, starting validation | Hold still for validation | Confidence > 50% |
-| **TOO_CLOSE** | Face is too large in frame (too close) | Move camera away | Face height < 65% viewport |
-| **TOO_FAR** | Face is too small in frame (too far) | Move camera closer | Face height > 25% viewport |
-| **OFF_CENTER** | Face not properly centered in oval | Center face in the oval guide | Within center zone |
-| **FACE_OBSTRUCTED** | **Hand, glasses, or low visibility** | Remove hands from face, ensure visibility | Hand distance > 15% |
-| **HEAD_NOT_STRAIGHT** | Head is tilted or turned | Face camera directly, keep head straight | Yaw/Pitch < 28° |
-| **MULTIPLE_FACES** | More than one face detected | Ensure only you are in frame | Exactly 1 face required |
-| **POOR_ILLUMINATION** | Not enough light to see face clearly | Increase lighting (natural/lamp light) | Brightness avg > 70 |
-| **STAY_STILL** | Movement detected, hold still | Stop moving, keep steady position | Movement < 5px, 1s |
-| **CAPTURING** | Validation passed, taking photo... | Keep position, don't move | Auto-capture in progress |
-| **SUCCESS** | ✅ Selfie captured successfully! | Photo saved and ready to upload | Capture completed |
-| **ERROR** | An error occurred during validation | Check camera permissions, try again | Check logs for details |
-
 ## ⚙️ Configuration Options
 
 ```typescript
@@ -200,35 +200,6 @@ const validator = new FaceValidator({
 });
 ```
 
-## 🎭 Live Demo
-
-### Online Demo
-Visit: **[https://face-validator-sdk.vercel.app](https://face-validator-sdk.vercel.app)**
-
-### Local Development
-
-```bash
-# Clone the repository
-git clone https://github.com/rwmsousa/face-validator-sdk.git
-cd face-validator-sdk
-
-# Install dependencies
-npm install
-
-# Run local demo (http://localhost:8081)
-npm run dev
-```
-
-### Build Demo for Production
-
-```bash
-# Build SDK + Demo
-npm run build
-npm run build:demo
-
-# Demo files output to: demo/dist/
-```
-
 ## 🏗️ Architecture
 
 ### MediaPipe Integration
@@ -253,13 +224,12 @@ The SDK uses two MediaPipe models running in parallel:
 │  │  2. Centering                    │  │
 │  │  3. Face geometry                │  │
 │  │  4. Head pose                    │  │
-│  │  5. Hand proximity ⭐NEW         │  │
+│  │  5. Hand proximity               │  │
 │  │  6. Illumination                 │  │
 │  │  7. Stability                    │  │
 │  └──────────────────────────────────┘  │
 └─────────────────────────────────────────┘
 ```
-
 
 ## 🔧 Development
 
@@ -283,62 +253,14 @@ face-validator-sdk/
 │   ├── types.ts            # TypeScript types
 │   ├── utils.ts            # Validation functions
 │   ├── i18n.ts             # Internationalization
-│   └── index.ts            # Public API exports
+│   └── index.ts            # Public API
 ├── demo/
-│   ├── demo.ts             # Local dev demo
+│   ├── demo.ts             # Local development demo
 │   ├── demo-standalone.ts  # Production demo
-│   └── public/
-│       └── index.html      # Demo HTML
-├── dist/                   # SDK build output
-│   ├── face-validator-sdk.esm.js
-│   ├── face-validator-sdk.cjs.js
-│   ├── face-validator-sdk.umd.js
-│   └── types/              # TypeScript declarations
-├── .github/
-│   └── workflows/
-│       ├── ci.yml          # CI/CD pipeline
-│       └── deploy-vercel.yml # Vercel deployment
-└── vercel.json             # Vercel configuration
+│   └── public/index.html   # Demo HTML
+├── dist/                   # Built SDK (generated)
+└── tests/                  # Test files
 ```
-
-## 🚀 Deployment
-
-### Vercel (Automatic)
-
-1. Connect repository to Vercel
-2. Add secrets to GitHub:
-   - `VERCEL_TOKEN`
-   - `VERCEL_ORG_ID`
-   - `VERCEL_PROJECT_ID`
-3. Push to `main` branch → auto-deploy
-
-### Manual Deployment
-
-```bash
-npm run build:demo
-# Deploy demo/dist/ to any static host
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'feat: add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-### Commit Convention
-
-We use [Conventional Commits](https://www.conventionalcommits.org/):
-
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation changes
-- `chore:` Maintenance tasks
-- `refactor:` Code refactoring
-- `test:` Add/update tests
 
 ## 📄 License
 
@@ -346,8 +268,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [MediaPipe](https://developers.google.com/mediapipe) by Google
-- [face-api.js](https://github.com/justadudewhohacks/face-api.js) (original inspiration)
+- [MediaPipe](https://developers.google.com/mediapipe) by Google for the powerful machine learning models
 
 ## 📞 Support
 
