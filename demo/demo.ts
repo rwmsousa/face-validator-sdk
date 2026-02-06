@@ -135,21 +135,6 @@ function saveThumbnail(imageDataUrl: string) {
   renderThumbnails();
 }
 
-function removeThumbnail(index: number) {
-  // Remover do array
-  capturedImages.splice(index, 1);
-
-  // Atualizar localStorage
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(capturedImages));
-  } catch (error) {
-    console.warn('Error updating localStorage:', error);
-  }
-
-  // Re-renderizar
-  renderThumbnails();
-}
-
 function toggleThumbnailZoom(thumbnailElement: HTMLElement) {
   const overlay = document.getElementById('thumbnailOverlay');
   const isZoomed = thumbnailElement.classList.contains('zoomed');
@@ -183,39 +168,9 @@ function renderThumbnails() {
     img.src = imageDataUrl;
     img.alt = `Capture ${index + 1}`;
 
-    // Botão de remover (X) - só no thumbnail pequeno
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'thumbnail-remove-btn';
-    removeBtn.innerHTML = '✕';
-    removeBtn.title = 'Remover';
-    removeBtn.onclick = (e) => {
-      e.stopPropagation(); // Evitar que dispare o zoom
-      removeThumbnail(index);
-    };
-
-    // Botão de fechar zoom (X) - só aparece quando ampliado
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'zoomed-close-btn';
-    closeBtn.innerHTML = '✕';
-    closeBtn.title = 'Fechar';
-    closeBtn.onclick = (e) => {
-      e.stopPropagation(); // Evitar que dispare o toggle
-      thumbnailItem.classList.remove('zoomed');
-      const overlay = document.getElementById('thumbnailOverlay');
-      if (overlay) overlay.classList.remove('active');
-    };
-
     // Evento de clique para ampliar (não fechar ao clicar na imagem ampliada)
     thumbnailItem.onclick = (e) => {
-      const target = e.target as HTMLElement;
-
-      // Não fazer nada se clicou nos botões
-      if (target.classList.contains('thumbnail-remove-btn') ||
-          target.classList.contains('zoomed-close-btn')) {
-        return;
-      }
-
-      // Se já está ampliado, não fazer nada (deixar apenas o X fechar)
+      // Se já está ampliado, não fazer nada (deixar apenas o overlay fechar)
       if (thumbnailItem.classList.contains('zoomed')) {
         return;
       }
@@ -225,8 +180,6 @@ function renderThumbnails() {
     };
 
     thumbnailItem.appendChild(img);
-    thumbnailItem.appendChild(removeBtn);
-    thumbnailItem.appendChild(closeBtn);
     container.appendChild(thumbnailItem);
   });
 
