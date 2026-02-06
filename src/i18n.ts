@@ -89,9 +89,9 @@ export function getMessage(status: ValidationStatus, locale: SupportedLocale): s
  */
 export function getLoadingModelsMessage(locale: SupportedLocale): string {
   const loading: Record<SupportedLocale, string> = {
-    'pt-BR': 'Carregando modelos...',
-    en: 'Loading models...',
-    es: 'Cargando modelos...',
+    'pt-BR': 'Carregando...',
+    en: 'Loading...',
+    es: 'Cargando...',
   };
   return loading[locale];
 }

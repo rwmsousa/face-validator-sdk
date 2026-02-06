@@ -158,7 +158,7 @@ export class FaceValidator {
 
         // Detectar faces
         const faceResults = this.faceLandmarker.detectForVideo(video, now);
-        
+
         // Detectar mãos
         const handResults = this.handLandmarker.detectForVideo(video, now);
 

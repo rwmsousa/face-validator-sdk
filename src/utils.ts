@@ -319,7 +319,7 @@ export function hasDarkGlasses(
       landmarks[144], // Inferior
       landmarks[145], // Centro
     ];
-    
+
     const rightEyeLandmarks = [
       landmarks[263], // Canto externo
       landmarks[362], // Canto interno
@@ -332,12 +332,12 @@ export function hasDarkGlasses(
     const getBoundingBox = (eyeLandmarks: NormalizedLandmark[]) => {
       const xs = eyeLandmarks.map(l => l.x * videoWidth);
       const ys = eyeLandmarks.map(l => l.y * videoHeight);
-      
+
       const minX = Math.max(0, Math.min(...xs) - 5);
       const maxX = Math.min(videoWidth, Math.max(...xs) + 5);
       const minY = Math.max(0, Math.min(...ys) - 5);
       const maxY = Math.min(videoHeight, Math.max(...ys) + 5);
-      
+
       return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
     };
 
@@ -345,13 +345,13 @@ export function hasDarkGlasses(
     const getRegionBrightness = (box: { x: number; y: number; width: number; height: number }) => {
       tempCanvas.width = box.width;
       tempCanvas.height = box.height;
-      
+
       ctx.drawImage(
         video,
         box.x, box.y, box.width, box.height,
         0, 0, box.width, box.height
       );
-      
+
       const imageData = ctx.getImageData(0, 0, box.width, box.height);
       return calculateAverageBrightness(imageData);
     };
@@ -359,17 +359,17 @@ export function hasDarkGlasses(
     // Analisar ambos os olhos
     const leftEyeBox = getBoundingBox(leftEyeLandmarks);
     const rightEyeBox = getBoundingBox(rightEyeLandmarks);
-    
+
     const leftEyeBrightness = getRegionBrightness(leftEyeBox);
     const rightEyeBrightness = getRegionBrightness(rightEyeBox);
-    
+
     const avgEyeBrightness = (leftEyeBrightness + rightEyeBrightness) / 2;
 
     // Threshold: se a região dos olhos está muito escura (< 40 em escala 0-255)
     // isso indica óculos escuros. Óculos de grau não bloqueiam tanto a luz.
     // Ajustado para 35 para ser mais sensível a óculos escuros
     return avgEyeBrightness < 35;
-    
+
   } catch (error) {
     console.warn('Erro ao detectar óculos escuros:', error);
     return false; // Em caso de erro, não bloqueia a captura
@@ -636,7 +636,7 @@ export function drawOverlay(
       ctx.beginPath();
       ctx.arc(chin.x * frameWidth, chin.y * frameHeight, 4, 0, 2 * Math.PI);
       ctx.fill();
-      
+
       // Landmarks dos olhos para visualização da detecção de óculos
       // Olho esquerdo (amarelo)
       ctx.fillStyle = 'yellow';
@@ -652,7 +652,7 @@ export function drawOverlay(
         ctx.arc(landmark.x * frameWidth, landmark.y * frameHeight, 3, 0, 2 * Math.PI);
         ctx.fill();
       });
-      
+
       // Olho direito (amarelo)
       ctx.fillStyle = 'yellow';
       const rightEyeLandmarks = [
@@ -667,7 +667,7 @@ export function drawOverlay(
         ctx.arc(landmark.x * frameWidth, landmark.y * frameHeight, 3, 0, 2 * Math.PI);
         ctx.fill();
       });
-      
+
       // Orelhas (roxo) - usadas na detecção de yaw
       ctx.fillStyle = 'purple';
       ctx.beginPath();
