@@ -6,20 +6,20 @@
   <title>Face Validator SDK - Demo</title>
   <meta name="description" content="Demo interativa do Face Validator SDK com MediaPipe - Detecção facial e de mãos em tempo real">
   <style>
-    * { 
-      box-sizing: border-box; 
-      margin: 0; 
-      padding: 0; 
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    
-    body { 
+
+    body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
       padding: 2rem 1rem;
       color: #333;
     }
-    
+
     .container {
       max-width: 800px;
       margin: 0 auto;
@@ -28,26 +28,26 @@
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       padding: 2rem;
     }
-    
+
     header {
       text-align: center;
       margin-bottom: 2rem;
       padding-bottom: 1.5rem;
       border-bottom: 2px solid #f0f0f0;
     }
-    
+
     h1 {
       font-size: 2rem;
       color: #667eea;
       margin-bottom: 0.5rem;
       font-weight: 700;
     }
-    
+
     .subtitle {
       color: #666;
       font-size: 0.95rem;
     }
-    
+
     .tech-badges {
       display: flex;
       gap: 0.5rem;
@@ -55,7 +55,7 @@
       margin-top: 1rem;
       flex-wrap: wrap;
     }
-    
+
     .badge {
       background: #f0f0f0;
       padding: 0.3rem 0.8rem;
@@ -64,12 +64,12 @@
       font-weight: 500;
       color: #555;
     }
-    
+
     .badge.primary {
       background: #667eea;
       color: white;
     }
-    
+
     .controls {
       display: flex;
       gap: 1rem;
@@ -77,7 +77,7 @@
       justify-content: center;
       flex-wrap: wrap;
     }
-    
+
     .control-group {
       display: flex;
       flex-direction: column;
@@ -85,13 +85,13 @@
       min-width: 180px;
       max-width: 200px;
     }
-    
+
     label {
       font-weight: 600;
       font-size: 0.9rem;
       color: #555;
     }
-    
+
     select, button {
       padding: 0.75rem 1rem;
       border-radius: 8px;
@@ -100,17 +100,17 @@
       font-family: inherit;
       transition: all 0.2s;
     }
-    
+
     select {
       background: white;
       cursor: pointer;
     }
-    
+
     select:focus {
       outline: none;
       border-color: #667eea;
     }
-    
+
     .checkbox-group {
       display: flex;
       align-items: center;
@@ -119,13 +119,13 @@
       background: #f8f8f8;
       border-radius: 8px;
     }
-    
+
     input[type="checkbox"] {
       width: 20px;
       height: 20px;
       cursor: pointer;
     }
-    
+
     .camera-wrapper {
       display: flex;
       gap: 1.5rem;
@@ -135,7 +135,7 @@
       max-width: 900px;
       flex-wrap: wrap;
     }
-    
+
     .video-container {
       position: relative;
       width: 100%;
@@ -146,7 +146,7 @@
       background: #000;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
-    
+
     .thumbnails-container {
       display: flex;
       flex-direction: column;
@@ -155,7 +155,7 @@
       max-width: 140px;
       height: 384px;
     }
-    
+
     .thumbnails-title {
       font-size: 0.85rem;
       font-weight: 600;
@@ -164,7 +164,7 @@
       text-align: center;
       flex-shrink: 0;
     }
-    
+
     .thumbnails-list {
       display: flex;
       flex-direction: column;
@@ -172,7 +172,7 @@
       flex: 1;
       justify-content: flex-start;
     }
-    
+
     .thumbnail-item {
       position: relative;
       width: 100%;
@@ -185,7 +185,7 @@
       background: #f5f5f5;
       flex-shrink: 0;
     }
-    
+
     .thumbnail-item img {
       width: 100%;
       height: 100%;
@@ -193,7 +193,7 @@
       display: block;
       border-radius: 8px;
     }
-    
+
     .thumbnail-item.zoomed {
       position: fixed;
       top: 50%;
@@ -205,7 +205,7 @@
       box-shadow: 0 12px 40px rgba(0,0,0,0.5);
       animation: zoomIn 0.3s ease-in-out;
     }
-    
+
     .thumbnail-overlay {
       position: fixed;
       top: 0;
@@ -217,83 +217,17 @@
       display: none;
       animation: fadeIn 0.3s ease-in-out;
     }
-    
+
     .thumbnail-overlay.active {
       display: block;
     }
-    
-    .thumbnail-remove-btn {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 20px;
-      height: 20px;
-      background: rgba(220, 38, 38, 0.9);
-      border: none;
-      border-radius: 4px;
-      color: white;
-      font-size: 12px;
-      font-weight: bold;
-      line-height: 1;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-      transition: all 0.2s;
-      opacity: 0;
-      padding: 0;
-    }
-    
-    .thumbnail-item:hover .thumbnail-remove-btn {
-      opacity: 1;
-    }
-    
-    .thumbnail-item.zoomed .thumbnail-remove-btn {
-      display: none;
-    }
-    
-    .thumbnail-remove-btn:hover {
-      background: rgba(220, 38, 38, 1);
-      transform: scale(1.15);
-    }
-    
-    .zoomed-close-btn {
-      position: absolute;
-      top: -12px;
-      right: -12px;
-      width: 32px;
-      height: 32px;
-      background: rgba(220, 38, 38, 0.95);
-      border: 2px solid white;
-      border-radius: 50%;
-      color: white;
-      font-size: 18px;
-      font-weight: bold;
-      line-height: 1;
-      cursor: pointer;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1002;
-      transition: all 0.2s;
-      padding: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-    
-    .thumbnail-item.zoomed .zoomed-close-btn {
-      display: flex;
-    }
-    
-    .zoomed-close-btn:hover {
-      background: rgba(220, 38, 38, 1);
-      transform: scale(1.1) rotate(90deg);
-    }
-    
+
+
+
     .thumbnail-item.fade-in {
       animation: fadeIn 0.4s ease-in-out;
     }
-    
+
     @keyframes fadeIn {
       from {
         opacity: 0;
@@ -302,7 +236,7 @@
         opacity: 1;
       }
     }
-    
+
     @keyframes zoomIn {
       from {
         opacity: 0;
@@ -313,31 +247,31 @@
         transform: translate(-50%, -50%) scale(1);
       }
     }
-    
+
     @media (max-width: 768px) {
       .camera-wrapper {
         flex-direction: column;
         align-items: center;
       }
-      
+
       .thumbnails-container {
         flex-direction: row;
         max-width: 100%;
         width: 100%;
         justify-content: center;
       }
-      
+
       .thumbnails-list {
         flex-direction: row;
         justify-content: center;
         flex-wrap: wrap;
       }
-      
+
       .thumbnail-item {
         max-width: 120px;
       }
     }
-    
+
     .initial-screen {
       position: absolute;
       top: 0;
@@ -353,7 +287,7 @@
       padding: 2rem;
       z-index: 10;
     }
-    
+
     .initial-screen-message {
       color: white;
       text-align: center;
@@ -361,7 +295,7 @@
       line-height: 1.6;
       max-width: 400px;
     }
-    
+
     #btnAllowCamera {
       background: #667eea;
       color: white;
@@ -374,24 +308,24 @@
       transition: all 0.2s;
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
-    
+
     #btnAllowCamera:hover {
       background: #5568d3;
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
     }
-    
+
     #btnAllowCamera:active {
       transform: translateY(0);
     }
-    
+
     #video {
       width: 100%;
       height: auto;
       display: block;
       transform: scaleX(-1);
     }
-    
+
     #overlay {
       position: absolute;
       left: 0;
@@ -401,7 +335,7 @@
       pointer-events: none;
       transform: scaleX(-1);
     }
-    
+
     .status-container {
       background: #f8f9fa;
       border-radius: 8px;
@@ -412,36 +346,36 @@
       align-items: center;
       justify-content: center;
     }
-    
+
     #status {
       font-size: 1rem;
       color: #555;
       text-align: center;
       font-weight: 500;
     }
-    
+
     .status-container.success {
       background: #d4edda;
       color: #155724;
     }
-    
+
     .status-container.error {
       background: #f8d7da;
       color: #721c24;
     }
-    
+
     .status-container.warning {
       background: #fff3cd;
       color: #856404;
     }
-    
+
     .button-group {
       display: flex;
       gap: 1rem;
       margin-bottom: 1.5rem;
       flex-wrap: wrap;
     }
-    
+
     button {
       flex: 1;
       min-width: 140px;
@@ -450,49 +384,49 @@
       border: none;
       transition: all 0.2s;
     }
-    
+
     button:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
-    
+
     button:active:not(:disabled) {
       transform: translateY(0);
     }
-    
+
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-    
+
     #btnStart {
       background: #667eea;
       color: white;
     }
-    
+
     #btnStart:hover:not(:disabled) {
       background: #5568d3;
     }
-    
+
     #btnStop {
       background: #ef4444;
       color: white;
     }
-    
+
     #btnStop:hover:not(:disabled) {
       background: #dc2626;
     }
-    
+
     .preview-container {
       text-align: center;
     }
-    
+
     .preview-container h3 {
       font-size: 1.1rem;
       color: #555;
       margin-bottom: 1rem;
     }
-    
+
     #preview img {
       max-width: 100%;
       max-height: 300px;
@@ -500,7 +434,7 @@
       border: 3px solid #667eea;
       box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     }
-    
+
     footer {
       margin-top: 2rem;
       padding-top: 1.5rem;
@@ -509,39 +443,39 @@
       color: #888;
       font-size: 0.85rem;
     }
-    
+
     footer a {
       color: #667eea;
       text-decoration: none;
       font-weight: 600;
     }
-    
+
     footer a:hover {
       text-decoration: underline;
     }
-    
+
     @media (max-width: 640px) {
       .container {
         padding: 1.5rem;
       }
-      
+
       h1 {
         font-size: 1.5rem;
       }
-      
+
       .controls {
         grid-template-columns: 1fr;
       }
-      
+
       .button-group {
         flex-direction: column;
       }
-      
+
       button {
         min-width: 100%;
       }
     }
-    
+
     .loading {
       display: inline-block;
       width: 20px;
@@ -551,7 +485,7 @@
       border-top-color: #fff;
       animation: spin 1s ease-in-out infinite;
     }
-    
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -560,11 +494,11 @@
 <body>
   <!-- Overlay para thumbnails ampliados -->
   <div class="thumbnail-overlay" id="thumbnailOverlay"></div>
-  
+
   <div class="container">
     <header>
       <h1 id="pageTitle">🎭 Face Validator SDK</h1>
-      <p class="subtitle" id="pageSubtitle">Validação de selfie em tempo real com detecção de face e mãos</p>
+      <p class="subtitle" id="pageSubtitle">Validação de selfie em tempo real com detecção de face</p>
       <div class="tech-badges">
         <span class="badge primary">MediaPipe</span>
         <span class="badge">Face Detection</span>
@@ -582,7 +516,7 @@
           <option value="es">Español</option>
         </select>
       </div>
-      
+
       <div class="control-group">
         <label id="debugLabel">🔍 Modo Debug</label>
         <div class="checkbox-group">
@@ -596,7 +530,7 @@
       <div class="video-container">
         <video id="video" width="512" height="384" autoplay playsinline muted></video>
         <canvas id="overlay" width="512" height="384"></canvas>
-        
+
         <!-- Tela inicial com botão de permissão -->
         <div class="initial-screen" id="initialScreen">
           <div class="initial-screen-message" id="initialMessage">
@@ -634,7 +568,7 @@
 
   <!-- MediaPipe Tasks Vision -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.js"></script>
-  
+
   <!-- Face Validator SDK (será injetado pelo webpack) -->
   <script src="./demo.bundle.js"></script>
 </body>
