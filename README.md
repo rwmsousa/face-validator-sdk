@@ -2,10 +2,7 @@
 
 Real-time selfie validation SDK with face detection, powered by **MediaPipe**. Detects faces, hands, and validates pose, lighting, and occlusions in real-time.
 
-🎭 **[Live Demo](https://face-validator-sdk.vercel.app)** | 📦 [NPM Package](#installation) | 📖 [Documentation](#usage) | 🤝 [Contributing](#contributing)
-
-[![CI](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/ci.yml)
-[![Deploy](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/deploy-vercel.yml/badge.svg)](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/deploy-vercel.yml)
+🎭 **[Live Demo](https://face-validator-sdk.vercel.app)** 
 
 ## ✨ Features
 
