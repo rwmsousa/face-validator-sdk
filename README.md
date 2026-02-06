@@ -4,10 +4,12 @@ Real-time selfie validation SDK with face detection, powered by **MediaPipe**. D
 
 🎭 **[Live Demo](https://face-validator-sdk.vercel.app)** | 📦 [NPM Package](#installation) | 📖 [Documentation](#usage) | 🤝 [Contributing](#contributing)
 
+[![CI](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/ci.yml)
+[![Deploy](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/deploy-vercel.yml/badge.svg)](https://github.com/rwmsousa/face-validator-sdk/actions/workflows/deploy-vercel.yml)
+
 ## ✨ Features
 
 ### Face Detection (478 landmarks)
-
 - ✅ **Distance validation**: TOO_CLOSE / TOO_FAR
 - ✅ **Centering**: Face must be centered in oval guide
 - ✅ **Head pose**: Detects tilted or turned head
@@ -15,14 +17,12 @@ Real-time selfie validation SDK with face detection, powered by **MediaPipe**. D
 - ✅ **Stability**: Ensures user stays still before capture
 - ✅ **Multiple faces**: Rejects when more than one face detected
 
-### Hand Detection
-
+### Hand Detection (NEW! 🎉)
 - ✅ **Hand near face detection**: Prevents hand covering face (obstructions)
 - ✅ **21 landmarks per hand**: High precision tracking
 - ✅ **Real-time validation**: Instant feedback
 
 ### Additional Features
-
 - 🌐 **i18n**: Portuguese (pt-BR), English (en), Spanish (es)
 - 🎨 **Visual feedback**: Oval guide with color-coded status
 - 🐛 **Debug mode**: Visualize landmarks and bounding boxes
@@ -32,172 +32,123 @@ Real-time selfie validation SDK with face detection, powered by **MediaPipe**. D
 ## 📦 Installation
 
 ```bash
-npm install face-validator-sdk
+npm install face-validator-sdk @mediapipe/tasks-vision
 ```
 
-The SDK automatically includes `@mediapipe/tasks-vision` as a dependency.
-
-## 📊 Validation Checklist
-
-The SDK validates multiple conditions before capturing the selfie. Here's what each status means:
-
-| Status | Description | User Action | Validation Threshold |
-|--------|-------------|-------------|----------------------|
-| **INITIALIZING** | Loading MediaPipe models from CDN | Wait, models loading... | N/A |
-| **NO_FACE_DETECTED** | Camera is active but no face found | Move closer to camera, ensure good lighting | Requires 1 face |
-| **FACE_DETECTED** | Face detected, starting validation | Hold still for validation | Confidence > 50% |
-| **TOO_CLOSE** | Face is too large in frame (too close) | Move camera away | Face height < 65% viewport |
-| **TOO_FAR** | Face is too small in frame (too far) | Move camera closer | Face height > 25% viewport |
-| **OFF_CENTER** | Face not properly centered in oval | Center face in the oval guide | Within center zone |
-| **FACE_OBSTRUCTED** | **Hand, glasses, or low visibility** | Remove hands from face, ensure visibility | Hand distance > 15% |
-| **HEAD_NOT_STRAIGHT** | Head is tilted or turned | Face camera directly, keep head straight | Yaw/Pitch < 28° |
-| **MULTIPLE_FACES** | More than one face detected | Ensure only you are in frame | Exactly 1 face required |
-| **POOR_ILLUMINATION** | Not enough light to see face clearly | Increase lighting (natural/lamp light) | Brightness avg > 70 |
-| **STAY_STILL** | Movement detected, hold still | Stop moving, keep steady position | Movement < 5px, 1s |
-| **CAPTURING** | Validation passed, taking photo... | Keep position, don't move | Auto-capture in progress |
-| **SUCCESS** | ✅ Selfie captured successfully! | Photo saved and ready to upload | Capture completed |
-| **ERROR** | An error occurred during validation | Check camera permissions, try again | Check logs for details |
+**Peer dependency**: `@mediapipe/tasks-vision` (^0.10.15)
 
 ## 🚀 Quick Start
-
-### Basic Usage
 
 ```typescript
 import { FaceValidator, ValidationStatus } from 'face-validator-sdk';
 
-// Get DOM elements
-const videoElement = document.getElementById('video');
-const canvasElement = document.getElementById('overlay');
+const video = document.querySelector('video');
+const canvas = document.querySelector('canvas');
 
-// Initialize validator
 const validator = new FaceValidator({
-  videoElement,
-  overlayCanvasElement: canvasElement,
+  videoElement: video,
+  overlayCanvasElement: canvas,
   locale: 'pt-BR', // 'pt-BR' | 'en' | 'es'
-  debugMode: true, // Show landmarks for debugging
+  debugMode: false,
   
-  // Called whenever validation status changes
   onStatusUpdate: (status, message) => {
-    document.getElementById('status').textContent = message;
-    console.log(`Status: ${status} - ${message}`);
+    console.log(status, message);
+    // Update UI with validation status
   },
   
-  // Called when user passes all validations and photo is captured
-  onCaptureSuccess: (imageBlob) => {
-    // Image is a Blob with the captured selfie
-    const url = URL.createObjectURL(imageBlob);
-    document.getElementById('preview').src = url;
-    
-    // Send to backend
-    const formData = new FormData();
-    formData.append('selfie', imageBlob, 'selfie.jpg');
-    fetch('/api/upload-selfie', { method: 'POST', body: formData });
+  onCaptureSuccess: (blob) => {
+    // Upload or preview the captured selfie
+    const url = URL.createObjectURL(blob);
+    document.querySelector('img').src = url;
   },
   
-  // Called if something goes wrong
   onError: (errorType, error) => {
-    console.error(`Validation Error: ${errorType}`, error);
-    document.getElementById('status').textContent = error.message;
+    console.error(errorType, error);
   }
 });
 
-// Validator starts automatically capturing when initialized
-// To stop the validator: validator.stop();
+// Validator starts automatically
+// To stop: validator.stop();
 ```
 
-### HTML Setup
+## 📊 Validation Status
 
-```html
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Face Validator SDK</title>
-  <style>
-    body { font-family: sans-serif; margin: 0; padding: 20px; }
-    #status { margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 4px; }
-    #preview { max-width: 300px; border-radius: 8px; margin-top: 20px; }
-  </style>
-</head>
-<body>
-  <h1>Face Validator SDK Demo</h1>
-  
-  <!-- Video element for camera feed (will be mirrored) -->
-  <video id="video" width="512" height="384" autoplay playsinline muted></video>
-  
-  <!-- Canvas for validation feedback (landmarks, oval guide, etc.) -->
-  <canvas id="overlay" width="512" height="384" style="border: 1px solid #ccc;"></canvas>
-  
-  <!-- Status display -->
-  <div id="status">Loading...</div>
-  
-  <!-- Captured selfie preview -->
-  <img id="preview" alt="Captured selfie" />
-  
-  <!-- Load SDK (MediaPipe models are loaded automatically) -->
-  <script type="module" src="./app.js"></script>
-</body>
-</html>
-```
+| Status | Description |
+|--------|-------------|
+| `INITIALIZING` | Loading MediaPipe models |
+| `NO_FACE_DETECTED` | No face found in frame |
+| `FACE_DETECTED` | Face detected, validating... |
+| `TOO_CLOSE` | Face too close to camera |
+| `TOO_FAR` | Face too far from camera |
+| `OFF_CENTER` | Face not centered in oval |
+| `FACE_OBSTRUCTED` | **Hand covering face or low visibility** |
+| `HEAD_NOT_STRAIGHT` | Head tilted or turned |
+| `MULTIPLE_FACES` | More than one face detected |
+| `POOR_ILLUMINATION` | Insufficient lighting |
+| `STAY_STILL` | Hold still for capture |
+| `CAPTURING` | Taking photo... |
+| `SUCCESS` | Capture successful! |
+| `ERROR` | An error occurred |
 
 ## ⚙️ Configuration Options
 
 ```typescript
 interface FaceValidatorOptions {
-  // ===== REQUIRED =====
+  // Required
   videoElement: HTMLVideoElement;
   onStatusUpdate: (status: ValidationStatus, message: string) => void;
   onCaptureSuccess: (imageBlob: Blob) => void;
   onError: (errorType: ValidationStatus, error: Error) => void;
   
-  // ===== OPTIONAL =====
-  // Display
+  // Optional
   overlayCanvasElement?: HTMLCanvasElement;
   locale?: 'pt-BR' | 'en' | 'es'; // Default: 'en'
-  debugMode?: boolean; // Show landmarks and bounding boxes. Default: false
+  debugMode?: boolean; // Default: false
   
-  // Validation Thresholds
-  minDetectionConfidence?: number; // Face detection threshold. Default: 0.5 (50%)
-  minIlluminationThreshold?: number; // Minimum brightness (0-255). Default: 70
-  minFaceSizeFactor?: number; // Minimum face size relative to viewport. Default: 0.25 (25%)
-  maxFaceSizeFactor?: number; // Maximum face size relative to viewport. Default: 0.65 (65%)
-  
-  // Stability & Capture
-  stabilizationTimeThreshold?: number; // Time to hold still before capture (ms). Default: 1000
-  stabilityMovementThreshold?: number; // Max allowed movement (pixels). Default: 5
-  minFaceVisibilityScore?: number; // Minimum face visibility (0-1). Default: 0.5
-  
-  // Head Pose
-  maxHeadTiltDegrees?: number; // Maximum head tilt allowed. Default: 28°
-  
-  // Hand Detection
-  maxHandFaceDistance?: number; // Maximum hand distance from face (0-1). Default: 0.15 (normalized)
+  // Validation thresholds
+  minDetectionConfidence?: number; // Default: 0.5
+  minIlluminationThreshold?: number; // Default: 70 (0-255)
+  minFaceSizeFactor?: number; // Default: 0.25
+  maxFaceSizeFactor?: number; // Default: 0.65
+  stabilizationTimeThreshold?: number; // Default: 1000ms
+  stabilityMovementThreshold?: number; // Default: 5px
+  minFaceVisibilityScore?: number; // Default: 0.5
+  maxHeadTiltDegrees?: number; // Default: 28°
+  maxHandFaceDistance?: number; // Default: 0.15 (normalized)
   
   // Advanced
-  modelPath?: string; // Custom path to MediaPipe WASM models. Auto-detected from CDN.
-  customMessages?: Partial<Record<ValidationStatus, string>>; // Override status messages
+  modelPath?: string; // MediaPipe WASM path (auto-detected from CDN)
+  customMessages?: Partial<Record<ValidationStatus, string>>;
 }
 ```
 
-### Example with Custom Thresholds
+## 🎭 Live Demo
 
-```typescript
-const validator = new FaceValidator({
-  videoElement,
-  overlayCanvasElement,
-  locale: 'pt-BR',
-  
-  // Stricter validation for high-security use cases
-  minDetectionConfidence: 0.8,     // 80% confidence required
-  minIlluminationThreshold: 100,   // Very bright required
-  maxHeadTiltDegrees: 15,          // Almost perfectly straight
-  stabilizationTimeThreshold: 2000, // 2 seconds of stillness
-  
-  onStatusUpdate,
-  onCaptureSuccess,
-  onError
-});
+### Online Demo
+Visit: **[https://face-validator-sdk.vercel.app](https://face-validator-sdk.vercel.app)**
+
+### Local Development
+
+```bash
+# Clone the repository
+git clone https://github.com/rwmsousa/face-validator-sdk.git
+cd face-validator-sdk
+
+# Install dependencies
+npm install
+
+# Run local demo (http://localhost:8081)
+npm run dev
+```
+
+### Build Demo for Production
+
+```bash
+# Build SDK + Demo
+npm run build
+npm run build:demo
+
+# Demo files output to: demo/dist/
 ```
 
 ## 🏗️ Architecture
@@ -224,12 +175,25 @@ The SDK uses two MediaPipe models running in parallel:
 │  │  2. Centering                    │  │
 │  │  3. Face geometry                │  │
 │  │  4. Head pose                    │  │
-│  │  5. Hand proximity               │  │
+│  │  5. Hand proximity ⭐NEW         │  │
 │  │  6. Illumination                 │  │
 │  │  7. Stability                    │  │
 │  └──────────────────────────────────┘  │
 └─────────────────────────────────────────┘
 ```
+
+## 📚 Why MediaPipe?
+
+Migrated from face-api.js (discontinued 2021) to MediaPipe (Google):
+
+| Feature | face-api.js | MediaPipe |
+|---------|-------------|-----------|
+| Landmarks | 68 points | **478 points** |
+| Hand detection | ❌ None | ✅ **21 pts/hand** |
+| Maintenance | ❌ Discontinued | ✅ Active (Google) |
+| Performance | CPU only | ✅ **GPU accelerated** |
+| Accuracy | ~60-70% | ✅ **~90-95%** |
+| Model size | ~8MB | ~15MB |
 
 ## 🔧 Development
 
@@ -253,14 +217,62 @@ face-validator-sdk/
 │   ├── types.ts            # TypeScript types
 │   ├── utils.ts            # Validation functions
 │   ├── i18n.ts             # Internationalization
-│   └── index.ts            # Public API
+│   └── index.ts            # Public API exports
 ├── demo/
-│   ├── demo.ts             # Local development demo
+│   ├── demo.ts             # Local dev demo
 │   ├── demo-standalone.ts  # Production demo
-│   └── public/index.html   # Demo HTML
-├── dist/                   # Built SDK (generated)
-└── tests/                  # Test files
+│   └── public/
+│       └── index.html      # Demo HTML
+├── dist/                   # SDK build output
+│   ├── face-validator-sdk.esm.js
+│   ├── face-validator-sdk.cjs.js
+│   ├── face-validator-sdk.umd.js
+│   └── types/              # TypeScript declarations
+├── .github/
+│   └── workflows/
+│       ├── ci.yml          # CI/CD pipeline
+│       └── deploy-vercel.yml # Vercel deployment
+└── vercel.json             # Vercel configuration
 ```
+
+## 🚀 Deployment
+
+### Vercel (Automatic)
+
+1. Connect repository to Vercel
+2. Add secrets to GitHub:
+   - `VERCEL_TOKEN`
+   - `VERCEL_ORG_ID`
+   - `VERCEL_PROJECT_ID`
+3. Push to `main` branch → auto-deploy
+
+### Manual Deployment
+
+```bash
+npm run build:demo
+# Deploy demo/dist/ to any static host
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'feat: add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+### Commit Convention
+
+We use [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation changes
+- `chore:` Maintenance tasks
+- `refactor:` Code refactoring
+- `test:` Add/update tests
 
 ## 📄 License
 
@@ -268,7 +280,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [MediaPipe](https://developers.google.com/mediapipe) by Google for the powerful machine learning models
+- [MediaPipe](https://developers.google.com/mediapipe) by Google
+- [face-api.js](https://github.com/justadudewhohacks/face-api.js) (original inspiration)
 
 ## 📞 Support
 

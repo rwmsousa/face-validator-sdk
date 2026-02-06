@@ -1,62 +1,13 @@
-# Dependencies
 node_modules
-package-lock.json
-yarn.lock
-
-# Build outputs
 dist
-dist-demo
-demo/dist
-build
-out
-
-# Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage
-coverage
-.nyc_output
-
-# IDE & Editor
-.vscode
-.idea
-*.swp
-*.swo
-*~
 .DS_Store
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# Environment
 .env
 .env.local
-.env.*.local
 
-# OS
-.DS_Store
-Thumbs.db
-
-# MediaPipe Models (see models/README.md)
-models/*.shard*
+# face-api.js weight files (see models/README.md)
+models/*.shard1
 models/*-weights_manifest.json
 
-# Misc
-.cache
-.parcel-cache
-.eslintcache
-.turbo
-turbo.json
+# Demo build output
+dist-demo

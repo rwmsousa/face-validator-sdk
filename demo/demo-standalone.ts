@@ -44,7 +44,6 @@ const translations = {
     startingValidation: 'Iniciando validação facial...',
     captureSuccess: 'Captura realizada com sucesso!',
     validationStopped: 'Validação parada. Clique em "Tentar Novamente" para recomeçar.',
-    thumbnailsTitle: 'Últimas capturas',
   },
   'en': {
     title: '🎭 Face Validator SDK',
@@ -66,7 +65,6 @@ const translations = {
     startingValidation: 'Starting face validation...',
     captureSuccess: 'Capture successful!',
     validationStopped: 'Validation stopped. Click "Try Again" to restart.',
-    thumbnailsTitle: 'Latest captures',
   },
   'es': {
     title: '🎭 Face Validator SDK',
@@ -88,7 +86,6 @@ const translations = {
     startingValidation: 'Iniciando validación facial...',
     captureSuccess: '¡Captura exitosa!',
     validationStopped: 'Validación detenida. Haga clic en "Intentar Nuevamente" para reiniciar.',
-    thumbnailsTitle: 'Capturas recientes',
   },
 };
 
@@ -133,7 +130,20 @@ function saveThumbnail(imageDataUrl: string) {
   renderThumbnails();
 }
 
+function removeThumbnail(index: number) {
+  // Remover do array
+  capturedImages.splice(index, 1);
 
+  // Atualizar localStorage
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(capturedImages));
+  } catch (error) {
+    console.warn('Error updating localStorage:', error);
+  }
+
+  // Re-renderizar
+  renderThumbnails();
+}
 
 function toggleThumbnailZoom(thumbnailElement: HTMLElement) {
   const overlay = document.getElementById('thumbnailOverlay');
@@ -168,9 +178,39 @@ function renderThumbnails() {
     img.src = imageDataUrl;
     img.alt = `Capture ${index + 1}`;
 
+    // Botão de remover (X) - só no thumbnail pequeno
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'thumbnail-remove-btn';
+    removeBtn.innerHTML = '✕';
+    removeBtn.title = 'Remover';
+    removeBtn.onclick = (e) => {
+      e.stopPropagation(); // Evitar que dispare o zoom
+      removeThumbnail(index);
+    };
+
+    // Botão de fechar zoom (X) - só aparece quando ampliado
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'zoomed-close-btn';
+    closeBtn.innerHTML = '✕';
+    closeBtn.title = 'Fechar';
+    closeBtn.onclick = (e) => {
+      e.stopPropagation(); // Evitar que dispare o toggle
+      thumbnailItem.classList.remove('zoomed');
+      const overlay = document.getElementById('thumbnailOverlay');
+      if (overlay) overlay.classList.remove('active');
+    };
+
     // Evento de clique para ampliar (não fechar ao clicar na imagem ampliada)
     thumbnailItem.onclick = (e) => {
-      // Se já está ampliado, não fazer nada (deixar apenas o overlay fechar)
+      const target = e.target as HTMLElement;
+
+      // Não fazer nada se clicou nos botões
+      if (target.classList.contains('thumbnail-remove-btn') ||
+          target.classList.contains('zoomed-close-btn')) {
+        return;
+      }
+
+      // Se já está ampliado, não fazer nada (deixar apenas o X fechar)
       if (thumbnailItem.classList.contains('zoomed')) {
         return;
       }
@@ -180,6 +220,8 @@ function renderThumbnails() {
     };
 
     thumbnailItem.appendChild(img);
+    thumbnailItem.appendChild(removeBtn);
+    thumbnailItem.appendChild(closeBtn);
     container.appendChild(thumbnailItem);
   });
 
@@ -211,7 +253,6 @@ function updatePageTexts() {
   const previewTitle = document.getElementById('previewTitle');
   const footerText = document.getElementById('footerText');
   const githubLink = document.getElementById('githubLink');
-  const thumbnailsTitle = document.getElementById('thumbnailsTitle');
 
   if (title) title.textContent = translate('title');
   if (subtitle) subtitle.textContent = translate('subtitle');
@@ -224,7 +265,6 @@ function updatePageTexts() {
   if (previewTitle) previewTitle.textContent = translate('previewTitle');
   if (footerText) footerText.textContent = translate('footerText');
   if (githubLink) githubLink.textContent = translate('githubLink');
-  if (thumbnailsTitle) thumbnailsTitle.textContent = translate('thumbnailsTitle');
 }
 
 function updateStatusUI(status: ValidationStatus, message: string) {
@@ -420,20 +460,6 @@ function init() {
   if (btnRetry) btnRetry.addEventListener('click', retry);
   if (btnAllowCamera) btnAllowCamera.addEventListener('click', initCamera);
   localeSelect.addEventListener('change', changeLanguage);
-
-  // Fechar zoom ao pressionar ESC
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      const zoomed = document.querySelector('.thumbnail-item.zoomed');
-      const overlay = document.getElementById('thumbnailOverlay');
-      if (zoomed) {
-        zoomed.classList.remove('zoomed');
-      }
-      if (overlay) {
-        overlay.classList.remove('active');
-      }
-    }
-  });
 
   console.log('Face Validator SDK Demo initialized');
   console.log('MediaPipe version: using CDN');

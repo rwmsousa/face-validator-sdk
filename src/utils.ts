@@ -63,10 +63,11 @@ const MEDIAPIPE_MOUTH_BOTTOM = 14;
 
 /**
  * Proporções do oval da moldura para centralização.
- * Ajustado para o tamanho do container (512x384).
+ * Ajustado para o tamanho do container (512x384) e para não encostar
+ * nas bordas do vídeo em integrações como o modal do datasync-front.
  */
-const OVAL_RADIUS_X_FACTOR = 0.20; // Raio horizontal do oval
-const OVAL_RADIUS_Y_FACTOR = 0.38; // Raio vertical do oval
+const OVAL_RADIUS_X_FACTOR = 0.20; // Raio horizontal do oval (20% da largura)
+const OVAL_RADIUS_Y_FACTOR = 0.34; // Raio vertical do oval (34% da altura)
 
 /**
  * Verifica se um ponto (normalizado 0-1) está dentro do oval de enquadramento.
