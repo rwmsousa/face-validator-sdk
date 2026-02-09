@@ -8,14 +8,14 @@ const baseConfig = {
   module: {
     rules: [
       {
-        test: /\.ts$/,
+        test: /\.tsx?$/,
         use: 'ts-loader',
         exclude: /node_modules/,
       },
     ],
   },
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.ts', '.tsx', '.js'],
   },
 };
 
@@ -28,7 +28,11 @@ const cjsConfig = {
     // clean omitido: o script "build" já faz rimraf dist; clean: true aqui apagava .esm.js e .umd.js nas builds multi-config
   },
   target: 'node',
-  externals: { '@mediapipe/tasks-vision': '@mediapipe/tasks-vision' },
+  externals: {
+    '@mediapipe/tasks-vision': '@mediapipe/tasks-vision',
+    react: 'react',
+    'react-dom': 'react-dom',
+  },
 };
 
 const esmConfig = {
@@ -40,7 +44,11 @@ const esmConfig = {
     library: { type: 'module' },
   },
   target: 'web',
-  externals: { '@mediapipe/tasks-vision': '@mediapipe/tasks-vision' },
+  externals: {
+    '@mediapipe/tasks-vision': '@mediapipe/tasks-vision',
+    react: 'react',
+    'react-dom': 'react-dom',
+  },
 };
 
 const umdConfig = {
@@ -52,7 +60,11 @@ const umdConfig = {
     globalObject: 'this',
   },
   target: 'web',
-  externals: { '@mediapipe/tasks-vision': 'mediapipe' },
+  externals: {
+    '@mediapipe/tasks-vision': 'mediapipe',
+    react: 'React',
+    'react-dom': 'ReactDOM',
+  },
 };
 
 module.exports = (env, argv) => {

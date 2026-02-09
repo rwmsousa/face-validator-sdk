@@ -16,20 +16,20 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.ts$/,
+        test: /\.tsx?$/,
         use: {
           loader: 'ts-loader',
           options: {
-          configFile: path.resolve(__dirname, 'tsconfig.demo.json'),
-          transpileOnly: true,
-        },
+            configFile: path.resolve(__dirname, 'tsconfig.demo.json'),
+            transpileOnly: true,
+          },
         },
         exclude: /node_modules/,
       },
     ],
   },
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.ts', '.tsx', '.js'],
     fallback: { fs: false },
   },
   output: {

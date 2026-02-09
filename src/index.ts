@@ -1,4 +1,5 @@
 import { FaceValidator } from './FaceValidator';
+import { ReactSelfieCapture } from './ReactSelfieCapture';
 import {
   ValidationStatus,
   type FaceValidatorOptions,
@@ -16,4 +17,5 @@ import {
 export { FaceValidator };
 export { ValidationStatus, FaceValidatorOptions, DetectedFaceData, DetectedHandData, BoundingBox, SupportedLocale };
 export { getValidationMessages, getMessage, getLoadingModelsMessage };
+export { ReactSelfieCapture };
 export default FaceValidator;
