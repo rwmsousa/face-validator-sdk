@@ -87,7 +87,12 @@ export function isPointInsideOval(
   const ry = frameHeight * OVAL_RADIUS_Y_FACTOR;
   const dx = (px - cx) / rx;
   const dy = (py - cy) / ry;
-  return dx * dx + dy * dy <= 1;
+  const distanceSquared = dx * dx + dy * dy;
+
+  // Mais rigoroso: nariz deve ficar próximo do centro do oval,
+  // não apenas "em qualquer ponto dentro" da borda.
+  // 1.0 = borda exata do oval; 0.6 ≈ região central mais restrita.
+  return distanceSquared <= 0.6;
 }
 
 /**
@@ -112,15 +117,14 @@ export function isFaceBoundingBoxInsideOval(
   const faceCenterX = (faceLeft + faceRight) / 2;
   const faceCenterY = (faceTop + faceBottom) / 2;
 
-  // 1. Centro da face deve estar dentro do oval (relaxado)
+  // 1. Centro da face deve estar dentro do oval (sem folga)
   const centerDx = (faceCenterX - cx) / rx;
   const centerDy = (faceCenterY - cy) / ry;
   if (centerDx * centerDx + centerDy * centerDy > 1.0) {
-    // Centro pode estar até no limite do oval (era 0.8)
     return false;
   }
 
-  // 2. Verificar apenas os cantos SEM margem adicional
+  // 2. Verificar todos os cantos SEM margem adicional
   const corners = [
     { x: faceLeft, y: faceTop },     // Top-left
     { x: faceRight, y: faceTop },    // Top-right
@@ -128,19 +132,18 @@ export function isFaceBoundingBoxInsideOval(
     { x: faceRight, y: faceBottom }, // Bottom-right
   ];
 
-  // Permitir que até 2 cantos fiquem fora (MUITO mais flexível)
+  // Mais rigoroso: nenhum canto pode ficar significativamente fora do oval
   let cornersOutside = 0;
   for (const corner of corners) {
     const dx = (corner.x - cx) / rx;
     const dy = (corner.y - cy) / ry;
-    if (dx * dx + dy * dy > 1.2) {
-      // Usar 1.2 ao invés de 1.1 para dar 20% de tolerância
+    if (dx * dx + dy * dy > 1.0) {
       cornersOutside++;
     }
   }
 
-  // Permitir até 2 cantos fora (era 1)
-  return cornersOutside <= 2;
+  // Não permitir cantos fora
+  return cornersOutside === 0;
 }
 
 /**

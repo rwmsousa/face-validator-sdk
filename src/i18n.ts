@@ -14,7 +14,7 @@ const messages: Record<SupportedLocale, Record<ValidationStatus, string>> = {
     [ValidationStatus.HEAD_NOT_STRAIGHT]: 'Olhe diretamente para a câmera e mantenha a cabeça reta.',
     [ValidationStatus.MULTIPLE_FACES]: 'Mantenha apenas uma pessoa no quadro.',
     [ValidationStatus.POOR_ILLUMINATION]:
-      'Procure um ambiente com boa iluminação e centralize seu rosto no centro do oval.',
+      'Procure um ambiente com boa iluminação.',
     [ValidationStatus.NOT_NEUTRAL_EXPRESSION]: 'Mantenha expressão neutra: boca fechada, sem sorrir e olhos abertos.',
     [ValidationStatus.DARK_GLASSES]: 'Remova os óculos escuros. Óculos de grau são permitidos.',
     [ValidationStatus.STAY_STILL]: 'Fique imóvel para capturar a foto',
