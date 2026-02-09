@@ -26,15 +26,17 @@ Real-time selfie validation SDK with face detection, powered by **MediaPipe**. D
 - 📦 **Multiple builds**: ESM, CJS, UMD
 - 🚀 **GPU accelerated**: Powered by MediaPipe with GPU support
 
-## 📦 Installation
+## 📦 Installation (Core SDK)
+
+For any web application (React, Angular, Vue, vanilla JS, Java backend with JS frontend, etc.) that wants to use the **core validator**:
 
 ```bash
-npm install face-validator-sdk @mediapipe/tasks-vision
+npm install face-validator-sdk
 ```
 
-**Peer dependency**: `@mediapipe/tasks-vision` (^0.10.15)
+> The SDK declares `@mediapipe/tasks-vision` (^0.10.15) as a regular dependency, so it is installed automatically when you install `face-validator-sdk`.
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Core API)
 
 ```typescript
 import { FaceValidator, ValidationStatus } from 'face-validator-sdk';
@@ -119,34 +121,130 @@ interface FaceValidatorOptions {
 }
 ```
 
-## 🎭 Live Demo
+---
 
-### Online Demo
-Visit: **[https://face-validator-sdk.vercel.app](https://face-validator-sdk.vercel.app)**
+## 🧩 React Component: `ReactSelfieCapture`
 
-### Local Development
+If you are building a **React** application and want a **ready‑to‑use selfie capture UI**, the SDK exposes an optional React component that encapsulates:
 
-```bash
-# Clone the repository
-git clone https://github.com/rwmsousa/face-validator-sdk.git
-cd face-validator-sdk
+- Camera access (`getUserMedia`)
+- Validation loop (`FaceValidator`)
+- Overlay drawing (oval + feedback)
+- Preview step (photo + buttons)
+- i18n for pt-BR, en, es
 
-# Install dependencies
-npm install
+### Installation (React project)
 
-# Run local demo (http://localhost:8081)
-npm run dev
-```
-
-### Build Demo for Production
+Your React app should already have `react` and `react-dom` installed. Then:
 
 ```bash
-# Build SDK + Demo
-npm run build
-npm run build:demo
-
-# Demo files output to: demo/dist/
+npm install face-validator-sdk
 ```
+
+> `@mediapipe/tasks-vision` is installed automatically as a dependency of the SDK.  
+> `react` and `react-dom` are declared as **peerDependencies** – they are **not** bundled inside the package.  
+> Non‑React applications should use the **core `FaceValidator` API** shown above instead of `ReactSelfieCapture`.
+
+### Basic usage
+
+```tsx
+import { ReactSelfieCapture } from 'face-validator-sdk';
+
+function SelfieExample() {
+  const handleCapture = (imageBase64: string | null) => {
+    if (imageBase64) {
+      // send to API, store, etc.
+    }
+  };
+
+  return (
+    <ReactSelfieCapture
+      locale={navigator.language}   // 'pt-BR' | 'en' | 'es' (auto-normalized)
+      onCapture={handleCapture}
+      onDismiss={() => console.log('Modal closed')}
+    />
+  );
+}
+```
+
+### Props
+
+```ts
+type SupportedLocale = 'pt-BR' | 'en' | 'es';
+
+type SelfieCaptureStyles = {
+  container?: React.CSSProperties;
+  media?: React.CSSProperties;
+  messageBanner?: React.CSSProperties;
+  primaryButton?: React.CSSProperties;
+  secondaryButton?: React.CSSProperties;
+};
+
+type SelfieCaptureUILabelOverrides = Partial<{
+  previewQuestion: string;
+  savePhoto: string;
+  tryAgain: string;
+  cancel: string;
+}>;
+
+interface ReactSelfieCaptureProps {
+  onCapture: (image: string | null) => void; // base64 data URL or null on cancel
+  onDismiss?: () => void;
+
+  // Behaviour
+  locale?: SupportedLocale | string; // Default: 'pt-BR' (auto-normalized)
+  videoWidth?: number;               // Default: 512
+  videoHeight?: number;              // Default: 384
+  debugMode?: boolean;               // Default: false
+  modelPath?: string;                // Optional MediaPipe WASM path; if omitted, uses internal CDN default
+
+  // Visual customization (inline styles)
+  styles?: SelfieCaptureStyles;
+
+  // Optional UI labels override (per-locale defaults exist)
+  labels?: SelfieCaptureUILabelOverrides;
+}
+```
+
+### Labels and i18n
+
+By default, the component renders UI labels in **Portuguese (pt-BR)**, **English (en)** or **Spanish (es)**:
+
+- Preview question (“O que você achou?” / “What do you think?” / “¿Qué te pareció?”)
+- Buttons (“Salvar foto”, “Tentar novamente”, “Cancelar”, etc.)
+
+You can override any of these without having to set up an external i18n layer:
+
+```tsx
+<ReactSelfieCapture
+  locale="pt-BR"
+  onCapture={handleCapture}
+  labels={{
+    previewQuestion: 'Confira sua selfie antes de salvar',
+    savePhoto: 'Confirmar selfie',
+  }}
+/>
+```
+
+### Styling
+
+The component ships with a sensible default layout, but you can tweak it via the `styles` prop:
+
+```tsx
+<ReactSelfieCapture
+  onCapture={handleCapture}
+  styles={{
+    container: { borderRadius: 24 },
+    media: { borderRadius: 16 },
+    messageBanner: { backgroundColor: '#f0f9ff', color: '#0369a1' },
+    primaryButton: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
+    secondaryButton: { borderRadius: 9999 },
+  }}
+/>;
+```
+
+> Tip: you can wrap `ReactSelfieCapture` in your own modal/dialog and pass `onDismiss` to close it from the **Cancel** button.
+
 
 ## 🏗️ Architecture
 
@@ -156,28 +254,6 @@ The SDK uses two MediaPipe models running in parallel:
 
 1. **FaceLandmarker**: 478 facial landmarks + face detection
 2. **HandLandmarker**: 21 hand landmarks per hand
-
-```
-┌─────────────────────────────────────────┐
-│         FaceValidator                   │
-├─────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌──────────────┐ │
-│  │ FaceLandmarker  │  │ HandLandmarker│ │
-│  │  (478 points)   │  │ (21 pts/hand) │ │
-│  └─────────────────┘  └──────────────┘ │
-│             ↓              ↓             │
-│  ┌──────────────────────────────────┐  │
-│  │   Validation Pipeline            │  │
-│  │  1. Distance                     │  │
-│  │  2. Centering                    │  │
-│  │  3. Face geometry                │  │
-│  │  4. Head pose                    │  │
-│  │  5. Hand proximity ⭐NEW         │  │
-│  │  6. Illumination                 │  │
-│  │  7. Stability                    │  │
-│  └──────────────────────────────────┘  │
-└─────────────────────────────────────────┘
-```
 
 ## 📚 Why MediaPipe?
 
@@ -192,64 +268,6 @@ Migrated from face-api.js (discontinued 2021) to MediaPipe (Google):
 | Accuracy | ~60-70% | ✅ **~90-95%** |
 | Model size | ~8MB | ~15MB |
 
-## 🔧 Development
-
-### Scripts
-
-```bash
-npm run dev          # Start local dev server (webpack)
-npm run build        # Build SDK (CJS, ESM, UMD)
-npm run build:demo   # Build production demo
-npm run lint         # Run ESLint
-npm run format       # Format code with Prettier
-npm run test         # Run tests (Jest)
-```
-
-### Project Structure
-
-```
-face-validator-sdk/
-├── src/
-│   ├── FaceValidator.ts    # Main validator class
-│   ├── types.ts            # TypeScript types
-│   ├── utils.ts            # Validation functions
-│   ├── i18n.ts             # Internationalization
-│   └── index.ts            # Public API exports
-├── demo/
-│   ├── demo.ts             # Local dev demo
-│   ├── demo-standalone.ts  # Production demo
-│   └── public/
-│       └── index.html      # Demo HTML
-├── dist/                   # SDK build output
-│   ├── face-validator-sdk.esm.js
-│   ├── face-validator-sdk.cjs.js
-│   ├── face-validator-sdk.umd.js
-│   └── types/              # TypeScript declarations
-├── .github/
-│   └── workflows/
-│       ├── ci.yml          # CI/CD pipeline
-│       └── deploy-vercel.yml # Vercel deployment
-└── vercel.json             # Vercel configuration
-```
-
-## 🚀 Deployment
-
-### Vercel (Automatic)
-
-1. Connect repository to Vercel
-2. Add secrets to GitHub:
-   - `VERCEL_TOKEN`
-   - `VERCEL_ORG_ID`
-   - `VERCEL_PROJECT_ID`
-3. Push to `main` branch → auto-deploy
-
-### Manual Deployment
-
-```bash
-npm run build:demo
-# Deploy demo/dist/ to any static host
-```
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please:
@@ -259,17 +277,6 @@ Contributions are welcome! Please:
 3. Commit changes: `git commit -m 'feat: add amazing feature'`
 4. Push to branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
-
-### Commit Convention
-
-We use [Conventional Commits](https://www.conventionalcommits.org/):
-
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation changes
-- `chore:` Maintenance tasks
-- `refactor:` Code refactoring
-- `test:` Add/update tests
 
 ## 📄 License
 
@@ -288,4 +295,3 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-Made with ❤️ using MediaPipe
