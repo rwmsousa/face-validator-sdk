@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] – 2026-02-18
+
+### Fixed
+
+- **ReactSelfieCapture**: Fixed circular import dependency that caused `ValidationStatus` to be undefined on load.
+- **Message throttling**: Implemented proper delay between instruction messages (1.5s minimum) to improve readability and user experience. Previous implementation was canceling timeouts preventing the delay from working correctly.
+- **Message display logic**: Messages now stay visible for a minimum configurable time (`MESSAGE_DELAY_MS`), with critical statuses (SUCCESS, ERROR, CAPTURING, INITIALIZING) still displaying immediately.
+
+### Changed
+
+- **Smooth transitions**: Added CSS transitions (`0.4s ease-in-out`) to message banner for smoother visual updates.
+- **Import structure**: Changed ReactSelfieCapture imports to use direct module paths instead of index barrel to avoid circular dependencies.
+
 ## [1.1.0] – 2026-02-06
 
 ### Changed

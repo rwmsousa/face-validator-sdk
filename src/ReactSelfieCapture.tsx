@@ -6,18 +6,23 @@ import React, {
   type CSSProperties,
 } from 'react';
 
-import {
-  FaceValidator,
-  type FaceValidatorOptions,
-  ValidationStatus,
-  type SupportedLocale,
-  getMessage,
-  getLoadingModelsMessage,
-} from './index';
+import { FaceValidator } from './FaceValidator';
+import type { FaceValidatorOptions, SupportedLocale } from './types';
+import { ValidationStatus } from './types';
+import { getMessage, getLoadingModelsMessage } from './i18n';
 
 const DEFAULT_VIDEO_WIDTH = 512;
 const DEFAULT_VIDEO_HEIGHT = 384;
 const DEFAULT_LOCALE: SupportedLocale = 'pt-BR';
+const MESSAGE_DELAY_MS = 1500; // Delay entre mudanças de mensagem (1.5 segundos)
+
+// Status que devem ser exibidos imediatamente sem delay
+const CRITICAL_STATUSES = [
+  ValidationStatus.SUCCESS,
+  ValidationStatus.ERROR,
+  ValidationStatus.CAPTURING,
+  ValidationStatus.INITIALIZING,
+];
 
 type UILabels = {
   previewQuestion: string;
@@ -95,9 +100,15 @@ export const ReactSelfieCapture: React.FC<ReactSelfieCaptureProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sdkRef = useRef<FaceValidator | null>(null);
+  const messageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastDisplayTimeRef = useRef<number>(0);
+  const latestMessageRef = useRef<string>('');
 
   const [status, setStatus] = useState<ValidationStatus>(ValidationStatus.INITIALIZING);
   const [message, setMessage] = useState<string>(
+    getMessage(ValidationStatus.INITIALIZING, effectiveLocale),
+  );
+  const [ displayedMessage, setDisplayedMessage ] = useState<string>(
     getMessage(ValidationStatus.INITIALIZING, effectiveLocale),
   );
   const [showCapture, setShowCapture] = useState<boolean>(true);
@@ -110,6 +121,56 @@ export const ReactSelfieCapture: React.FC<ReactSelfieCaptureProps> = ({
     },
     [],
   );
+
+  // Gerenciar delay entre mudanças de mensagem para melhorar UX
+  useEffect(() => {
+    // Sempre atualizar o ref com a mensagem mais recente
+    latestMessageRef.current = message;
+
+    // Se a mensagem é a mesma que já está sendo exibida, não fazer nada
+    if (message === displayedMessage) {
+      return;
+    }
+
+    // Se é um status crítico, exibir imediatamente
+    if (CRITICAL_STATUSES.includes(status)) {
+      // Cancelar e limpar qualquer timeout pendente
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+        messageTimeoutRef.current = null;
+      }
+      setDisplayedMessage(message);
+      lastDisplayTimeRef.current = Date.now();
+      return;
+    }
+
+    // Para status não-críticos:
+    const now = Date.now();
+    const timeSinceLastDisplay = now - lastDisplayTimeRef.current;
+
+    // Se já passou tempo suficiente, atualizar imediatamente
+    if (timeSinceLastDisplay >= MESSAGE_DELAY_MS) {
+      setDisplayedMessage(message);
+      lastDisplayTimeRef.current = now;
+      return;
+    }
+
+    // Se já existe um timeout agendado, não criar outro
+    // (deixar o timeout completar e exibir a mensagem mais recente do ref)
+    if (messageTimeoutRef.current) {
+      return;
+    }
+
+    // Agendar atualização para quando completar o delay mínimo
+    const remainingTime = MESSAGE_DELAY_MS - timeSinceLastDisplay;
+
+    messageTimeoutRef.current = setTimeout(() => {
+      // Usar a mensagem mais recente do ref
+      setDisplayedMessage(latestMessageRef.current);
+      lastDisplayTimeRef.current = Date.now();
+      messageTimeoutRef.current = null;
+    }, remainingTime);
+  }, [ message, status, displayedMessage ]);
 
   function blobToBase64(blob: Blob): Promise<string | null> {
     return new Promise((resolve, reject) => {
@@ -279,6 +340,7 @@ export const ReactSelfieCapture: React.FC<ReactSelfieCaptureProps> = ({
     marginTop: 30,
     height: 52,
     boxSizing: 'border-box',
+    transition: 'all 0.4s ease-in-out',
     ...styles?.messageBanner,
   };
 
@@ -341,7 +403,7 @@ export const ReactSelfieCapture: React.FC<ReactSelfieCaptureProps> = ({
   return (
     <div style={containerStyle}>
       <div style={bannerStyle}>
-        {isPreview ? ui.previewQuestion : message}
+        { isPreview ? ui.previewQuestion : displayedMessage }
       </div>
 
       <div style={mediaWrapper}>
