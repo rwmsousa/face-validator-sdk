@@ -1,6 +1,6 @@
 {
   "name": "face-validator-sdk",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Real-time selfie validation SDK with face detection, i18n (pt-BR, en, es). Built on MediaPipe.",
   "main": "dist/face-validator-sdk.cjs.js",
   "module": "dist/face-validator-sdk.esm.js",
@@ -19,13 +19,25 @@
       "browser": "./dist/face-validator-sdk.umd.js",
       "default": "./dist/face-validator-sdk.cjs.js"
     },
+    "./core": {
+      "import": {
+        "types": "./dist/types/core/core.d.ts",
+        "default": "./dist/face-validator-sdk-core.esm.js"
+      },
+      "require": {
+        "types": "./dist/types/core/core.d.ts",
+        "default": "./dist/face-validator-sdk-core.cjs.js"
+      },
+      "browser": "./dist/face-validator-sdk-core.umd.js",
+      "default": "./dist/face-validator-sdk-core.cjs.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
     "start": "webpack serve --config webpack.demo.js --mode development",
     "demo": "webpack serve --config webpack.demo.js --mode development",
     "dev": "webpack serve --config webpack.demo.js --mode development",
-    "build": "rimraf dist && webpack --mode production && tsc --emitDeclarationOnly --outDir dist/types",
+    "build": "rimraf dist && webpack --mode production && tsc --emitDeclarationOnly --outDir dist/types && tsc --project tsconfig.core.json --emitDeclarationOnly",
     "build:demo": "rimraf demo/dist && webpack --config webpack.demo-prod.js --mode production && cp demo/public/index.html demo/dist/index.html",
     "build:watch": "webpack --watch --mode development",
     "lint": "eslint . --ext .ts --report-unused-disable-directives --max-warnings 0",
@@ -48,6 +60,8 @@
   ],
   "files": [
     "dist",
+    "core.js",
+    "core.d.ts",
     "LICENSE",
     "README.md",
     "CHANGELOG.md"
@@ -58,6 +72,14 @@
   "peerDependencies": {
     "react": ">=17.0.0",
     "react-dom": ">=17.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

@@ -19,6 +19,11 @@ const baseConfig = {
   },
 };
 
+const baseCoreConfig = {
+  ...baseConfig,
+  entry: './src/core.ts',
+};
+
 const cjsConfig = {
   ...baseConfig,
   output: {
@@ -67,11 +72,56 @@ const umdConfig = {
   },
 };
 
+// Core builds — framework-agnostic, no React dependency
+const coreCjsConfig = {
+  ...baseCoreConfig,
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: `${baseFilename}-core.cjs.js`,
+    library: { type: 'commonjs2' },
+  },
+  target: 'node',
+  externals: {
+    '@mediapipe/tasks-vision': '@mediapipe/tasks-vision',
+  },
+};
+
+const coreEsmConfig = {
+  ...baseCoreConfig,
+  experiments: { outputModule: true },
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: `${baseFilename}-core.esm.js`,
+    library: { type: 'module' },
+  },
+  target: 'web',
+  externals: {
+    '@mediapipe/tasks-vision': '@mediapipe/tasks-vision',
+  },
+};
+
+const coreUmdConfig = {
+  ...baseCoreConfig,
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: `${baseFilename}-core.umd.js`,
+    library: { name: libraryName, type: 'umd' },
+    globalObject: 'this',
+  },
+  target: 'web',
+  externals: {
+    '@mediapipe/tasks-vision': 'mediapipe',
+  },
+};
+
 module.exports = (env, argv) => {
   const devtool = argv.mode === 'production' ? 'source-map' : 'inline-source-map';
   return [
     { ...cjsConfig, devtool },
     { ...esmConfig, devtool },
     { ...umdConfig, devtool },
+    { ...coreCjsConfig, devtool },
+    { ...coreEsmConfig, devtool },
+    { ...coreUmdConfig, devtool },
   ];
 };

@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declarationDir": "./dist/types/core"
+  },
+  "include": [
+    "src/core.ts",
+    "src/FaceValidator.ts",
+    "src/types.ts",
+    "src/i18n.ts",
+    "src/utils.ts"
+  ],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/ReactSelfieCapture.tsx"]
+}
