@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] – 2026-02-23
+
+### Added
+
+- **Container-first API**: New `container`, `ui`, `autoStart`, `mirror`, and `videoConstraints` options to let the SDK manage media elements and UI automatically.
+- **Managed UI styling**: Default UI now injects its own minimal styles when `ui: 'default'` is used.
+- **Lifecycle cleanup**: New `destroy()` method to release resources, stop camera streams, and clean up managed DOM elements.
+
+### Changed
+
+- **Callbacks optional**: `onStatusUpdate`, `onCaptureSuccess`, and `onError` are now optional.
+- **Camera initialization**: Internal camera setup now awaits readiness before starting detection loops.
+- **ReactSelfieCapture**: Uses SDK-managed camera lifecycle and `destroy()` for cleanup.
+
 ## [1.2.1] – 2026-02-18
 
 ### Fixed

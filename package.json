@@ -1,6 +1,6 @@
 {
   "name": "face-validator-sdk",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Real-time selfie validation SDK with face detection, i18n (pt-BR, en, es). Built on MediaPipe.",
   "main": "dist/face-validator-sdk.cjs.js",
   "module": "dist/face-validator-sdk.esm.js",
