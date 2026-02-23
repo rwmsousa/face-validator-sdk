@@ -218,14 +218,8 @@ export const ReactSelfieCapture: React.FC<ReactSelfieCaptureProps> = ({
 
     if (!showCapture) {
       if (sdkRef.current) {
-        sdkRef.current.stop();
+        sdkRef.current.destroy();
         sdkRef.current = null;
-      }
-      if (videoElement && videoElement.srcObject) {
-        const stream = videoElement.srcObject as MediaStream;
-        stream.getTracks().forEach((track) => track.stop());
-        // eslint-disable-next-line no-param-reassign
-        videoElement.srcObject = null;
       }
       return;
     }
@@ -236,23 +230,10 @@ export const ReactSelfieCapture: React.FC<ReactSelfieCaptureProps> = ({
 
     const setupCameraAndSdk = async () => {
       try {
-        if (!videoElement.srcObject) {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: videoWidth, height: videoHeight },
-          });
-          if (isCancelled) return;
-
-          // eslint-disable-next-line no-param-reassign
-          videoElement.srcObject = stream;
-          await videoElement.play();
-        }
-
         const canvasElement = canvasRef.current;
-        if (canvasElement) {
-          const vw = videoElement.videoWidth || videoWidth;
-          const vh = videoElement.videoHeight || videoHeight;
-          canvasElement.width = vw;
-          canvasElement.height = vh;
+        if (canvasElement && !canvasElement.width) {
+          canvasElement.width = videoWidth;
+          canvasElement.height = videoHeight;
         }
 
         if (sdkRef.current || isCancelled) return;
@@ -267,6 +248,9 @@ export const ReactSelfieCapture: React.FC<ReactSelfieCaptureProps> = ({
           onError: handleError,
           videoWidth,
           videoHeight,
+          ui: 'none',
+          autoStart: true,
+          mirror: true,
         };
 
         if (modelPath) {
@@ -287,16 +271,10 @@ export const ReactSelfieCapture: React.FC<ReactSelfieCaptureProps> = ({
 
     return () => {
       isCancelled = true;
-      if (sdkRef.current) {
-        sdkRef.current.stop();
-        sdkRef.current = null;
-      }
-      if (videoElement && videoElement.srcObject) {
-        const stream = videoElement.srcObject as MediaStream;
-        stream.getTracks().forEach((track) => track.stop());
-        // eslint-disable-next-line no-param-reassign
-        videoElement.srcObject = null;
-      }
+        if (sdkRef.current) {
+          sdkRef.current.destroy();
+          sdkRef.current = null;
+        }
     };
   }, [
     showCapture,
@@ -414,7 +392,7 @@ export const ReactSelfieCapture: React.FC<ReactSelfieCaptureProps> = ({
               autoPlay
               playsInline
               muted
-              style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
             <canvas
               ref={canvasRef}

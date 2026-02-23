@@ -22,10 +22,20 @@ export enum ValidationStatus {
 export type SupportedLocale = 'pt-BR' | 'en' | 'es';
 
 export interface FaceValidatorOptions {
+  /** Optional container element or selector to auto-render UI and media elements. */
+  container?: HTMLElement | string;
+  /** Optional UI mode. Default: 'default'. */
+  ui?: 'default' | 'none';
+  /** Auto-start camera if SDK manages the video element. Default: true. */
+  autoStart?: boolean;
+  /** Mirror preview horizontally. Default: true. */
+  mirror?: boolean;
+  /** Optional video constraints passed to getUserMedia. */
+  videoConstraints?: MediaTrackConstraints;
   /** Optional path to MediaPipe models WASM files. Default: auto-detected from CDN */
   modelPath?: string;
   /** Video element for the camera stream. */
-  videoElement: HTMLVideoElement;
+  videoElement?: HTMLVideoElement;
   /** Optional canvas for visual feedback (e.g. face outline). */
   overlayCanvasElement?: HTMLCanvasElement | null;
   /** Optional video width. Default: 640 */
@@ -37,11 +47,11 @@ export interface FaceValidatorOptions {
   /** Optional override for specific status messages. */
   customMessages?: Partial<Record<ValidationStatus, string>>;
   /** Callback on each validation status update. */
-  onStatusUpdate: (status: ValidationStatus, message: string) => void;
+  onStatusUpdate?: (status: ValidationStatus, message: string) => void;
   /** Callback when selfie is successfully captured (receives Blob). */
-  onCaptureSuccess: (imageBlob: Blob) => void;
+  onCaptureSuccess?: (imageBlob: Blob) => void;
   /** Callback on error. */
-  onError: (errorType: ValidationStatus, error: Error) => void;
+  onError?: (errorType: ValidationStatus, error: Error) => void;
   /** Optional min detection confidence (0–1). Default: 0.5 */
   minDetectionConfidence?: number;
   /** Optional min brightness (0–255). Default: 70 */
