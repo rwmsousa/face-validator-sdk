@@ -41,33 +41,26 @@ npm install face-validator-sdk
 ```typescript
 import { FaceValidator, ValidationStatus } from 'face-validator-sdk';
 
-const video = document.querySelector('video');
-const canvas = document.querySelector('canvas');
-
 const validator = new FaceValidator({
-  videoElement: video,
-  overlayCanvasElement: canvas,
-  locale: 'pt-BR', // 'pt-BR' | 'en' | 'es'
+  container: '#selfieContainer',
+  ui: 'default',
+  locale: 'pt-BR',
   debugMode: false,
-  
+  mirror: true,
   onStatusUpdate: (status, message) => {
     console.log(status, message);
-    // Update UI with validation status
   },
-  
   onCaptureSuccess: (blob) => {
-    // Upload or preview the captured selfie
     const url = URL.createObjectURL(blob);
-    document.querySelector('img').src = url;
+    document.querySelector('img')!.src = url;
   },
-  
   onError: (errorType, error) => {
     console.error(errorType, error);
   }
 });
 
-// Validator starts automatically
-// To stop: validator.stop();
+// The validator starts automatically.
+// To stop and release resources: validator.destroy();
 ```
 
 ## 📊 Validation Status
@@ -93,33 +86,123 @@ const validator = new FaceValidator({
 
 ```typescript
 interface FaceValidatorOptions {
-  // Required
-  videoElement: HTMLVideoElement;
-  onStatusUpdate: (status: ValidationStatus, message: string) => void;
-  onCaptureSuccess: (imageBlob: Blob) => void;
-  onError: (errorType: ValidationStatus, error: Error) => void;
-  
-  // Optional
-  overlayCanvasElement?: HTMLCanvasElement;
-  locale?: 'pt-BR' | 'en' | 'es'; // Default: 'en'
-  debugMode?: boolean; // Default: false
-  
-  // Validation thresholds
-  minDetectionConfidence?: number; // Default: 0.5
-  minIlluminationThreshold?: number; // Default: 70 (0-255)
-  minFaceSizeFactor?: number; // Default: 0.25
-  maxFaceSizeFactor?: number; // Default: 0.65
-  stabilizationTimeThreshold?: number; // Default: 1000ms
-  stabilityMovementThreshold?: number; // Default: 5px
-  minFaceVisibilityScore?: number; // Default: 0.5
-  maxHeadTiltDegrees?: number; // Default: 28°
-  maxHandFaceDistance?: number; // Default: 0.15 (normalized)
-  
-  // Advanced
-  modelPath?: string; // MediaPipe WASM path (auto-detected from CDN)
+  // UI structure
+  container?: HTMLElement | string;   // Element or selector to auto-render video/canvas and status
+  ui?: 'default' | 'none';            // Default: 'default'
+  autoStart?: boolean;                // Default: true
+  mirror?: boolean;                   // Default: true
+
+  // Camera
+  videoElement?: HTMLVideoElement;    // Use if you want to control the video manually
+  overlayCanvasElement?: HTMLCanvasElement | null;
+  videoConstraints?: MediaTrackConstraints;
+  videoWidth?: number;
+  videoHeight?: number;
+
+  // Idioma e debug
+  locale?: 'pt-BR' | 'en' | 'es';
+  debugMode?: boolean;
   customMessages?: Partial<Record<ValidationStatus, string>>;
+
+  // Callbacks
+  onStatusUpdate?: (status: ValidationStatus, message: string) => void;
+  onCaptureSuccess?: (imageBlob: Blob) => void;
+  onError?: (errorType: ValidationStatus, error: Error) => void;
+
+  // Thresholds de validacao
+  minDetectionConfidence?: number;
+  minIlluminationThreshold?: number;
+  minFaceSizeFactor?: number;
+  maxFaceSizeFactor?: number;
+  stabilizationTimeThreshold?: number;
+  stabilityMovementThreshold?: number;
+  minFaceVisibilityScore?: number;
+  maxHeadTiltDegrees?: number;
+  maxHandFaceDistance?: number;
+
+  // Advanced
+  modelPath?: string; // Path to MediaPipe WASM (auto-detected via CDN)
 }
 ```
+
+## ✅ Usage with React (ReactSelfieCapture)
+
+```tsx
+import { ReactSelfieCapture } from 'face-validator-sdk';
+
+export function SelfieModal() {
+  const handleCapture = (imageBase64: string | null) => {
+    if (!imageBase64) return;
+    // Send the selfie to your API
+  };
+
+  return (
+    <ReactSelfieCapture
+      locale="pt-BR"
+      onCapture={handleCapture}
+      onDismiss={() => console.log('Modal closed')}
+      debugMode={false}
+      labels={{
+        previewQuestion: 'Check your selfie before saving',
+        savePhoto: 'Confirm selfie'
+      }}
+    />
+  );
+}
+```
+
+- `locale`: defines the language for messages and labels displayed.
+- `onCapture`: main callback; receives the base64 image or `null` if the user cancels.
+- `onDismiss`: used to close the modal/dialog when the user clicks cancel.
+- `debugMode`: enables landmark visualization for debugging.
+- `labels`: overrides default texts (e.g., preview title and button label).
+
+## ✅ Usage with Angular (Core API)
+
+```ts
+import { AfterViewInit, Component, OnDestroy } from '@angular/core';
+import { FaceValidator, ValidationStatus } from 'face-validator-sdk';
+
+@Component({
+  selector: 'app-selfie-dialog',
+  template: '<div id="selfieContainer"></div>'
+})
+export class SelfieDialogComponent implements AfterViewInit, OnDestroy {
+  private validator: FaceValidator | null = null;
+
+  ngAfterViewInit(): void {
+    this.validator = new FaceValidator({
+      container: '#selfieContainer',
+      ui: 'none',
+      locale: 'pt-BR',
+      debugMode: false,
+      mirror: true,
+      onStatusUpdate: (status: ValidationStatus, message: string) => {
+        console.log(status, message);
+      },
+      onCaptureSuccess: (blob: Blob) => {
+        console.log('Selfie capturada', blob);
+      },
+      onError: (errorType: ValidationStatus, error: Error) => {
+        console.error(errorType, error);
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.validator?.destroy();
+  }
+}
+```
+
+- `container`: target element where the SDK automatically renders video and canvas.
+- `ui`: use `none` to render your own UI (status, buttons, etc.).
+- `locale`: defines the language for SDK messages.
+- `debugMode`: displays landmarks for debugging during development.
+- `mirror`: mirrors the camera (selfie default).
+- `onStatusUpdate`: receives the status and message for you to update the UI.
+- `onCaptureSuccess`: receives the `Blob` of the captured selfie for upload/preview.
+- `onError`: captures camera or model loading errors.
 
 ---
 

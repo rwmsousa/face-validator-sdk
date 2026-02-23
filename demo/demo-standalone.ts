@@ -5,8 +5,7 @@
 
 import { FaceValidator, ValidationStatus, type SupportedLocale } from '../src/index';
 
-const VIDEO_ID = 'video';
-const OVERLAY_ID = 'overlay';
+const CAMERA_CONTAINER_ID = 'cameraContainer';
 const STATUS_ID = 'status';
 const STATUS_CONTAINER_ID = 'statusContainer';
 const THUMBNAILS_LIST_ID = 'thumbnailsList';
@@ -16,11 +15,12 @@ const BTN_RETRY_ID = 'btnRetry';
 
 const STORAGE_KEY = 'face-validator-captures';
 const MAX_THUMBNAILS = 3;
+const AUTO_RESTART_DELAY_MS = 1200;
 
 let validator: FaceValidator | null = null;
-let cameraStream: MediaStream | null = null;
 let currentLocale: SupportedLocale = 'pt-BR';
 let capturedImages: string[] = [];
+let autoRestartTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Traduções da interface
 const translations = {
@@ -260,79 +260,46 @@ function updateStatusUI(status: ValidationStatus, message: string) {
   }
 }
 
-/**
- * Inicializa a câmera com permissão do usuário
- */
-async function initCamera() {
-  const video = getEl<HTMLVideoElement>(VIDEO_ID);
-  const allowCameraButton = document.getElementById('btnAllowCamera');
-  const initialScreen = document.getElementById('initialScreen');
+function destroyValidator(): void {
+  if (validator) {
+    validator.destroy();
+    validator = null;
+  }
+}
 
-  updateStatusUI(ValidationStatus.INITIALIZING, translate('requestingCamera'));
-
-  // Ocultar tela inicial e botão de permitir
-  if (initialScreen) initialScreen.style.display = 'none';
-  if (allowCameraButton) allowCameraButton.style.display = 'none';
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 512, height: 384, facingMode: 'user' }
-    });
-    cameraStream = stream;
-    video.srcObject = stream;
-    await video.play();
-
-    updateStatusUI(ValidationStatus.FACE_DETECTED, translate('cameraReady'));
-
-    // Iniciar validação automaticamente após 500ms
-    setTimeout(() => {
-      startValidation();
-    }, 500);
-  } catch (err: any) {
-    // Verificar tipo de erro
-    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      updateStatusUI(ValidationStatus.ERROR, translate('permissionDenied'));
-    } else {
-      updateStatusUI(ValidationStatus.ERROR, `${translate('cameraError')}: ${err.message}`);
-    }
-
-    console.error('Erro ao acessar câmera:', err);
-
-    // Mostrar botão novamente para tentar de novo
-    if (allowCameraButton) allowCameraButton.style.display = 'block';
+function clearAutoRestart(): void {
+  if (autoRestartTimeout) {
+    clearTimeout(autoRestartTimeout);
+    autoRestartTimeout = null;
   }
 }
 
 /**
  * Inicia a validação facial
  */
-async function startValidation() {
-  const video = getEl<HTMLVideoElement>(VIDEO_ID);
-  const overlay = getEl<HTMLCanvasElement>(OVERLAY_ID);
+function startValidation() {
   const debugCheckbox = getEl<HTMLInputElement>(DEBUG_ID);
   const btnRetry = getEl<HTMLButtonElement>(BTN_RETRY_ID);
+  const allowCameraButton = document.getElementById('btnAllowCamera');
+  const initialScreen = document.getElementById('initialScreen');
 
-  if (validator) {
-    validator.stop();
-    validator = null;
-  }
+  clearAutoRestart();
+  destroyValidator();
 
-  // Verificar se a câmera está ativa
-  if (!cameraStream || !video.srcObject) {
-    updateStatusUI(ValidationStatus.ERROR, translate('cameraNotAvailable'));
-    return;
-  }
+  // Ocultar tela inicial e botão de permitir
+  if (initialScreen) initialScreen.style.display = 'none';
+  if (allowCameraButton) allowCameraButton.style.display = 'none';
 
   // Ocultar botão Retry durante validação
   btnRetry.style.display = 'none';
 
-  updateStatusUI(ValidationStatus.INITIALIZING, translate('startingValidation'));
+  updateStatusUI(ValidationStatus.INITIALIZING, translate('requestingCamera'));
 
   // FaceValidator inicia automaticamente no construtor
   try {
     validator = new FaceValidator({
-      videoElement: video,
-      overlayCanvasElement: overlay,
+      container: `#${CAMERA_CONTAINER_ID}`,
+      ui: 'none',
       locale: currentLocale,
       debugMode: debugCheckbox.checked,
       onStatusUpdate: (status: ValidationStatus, message: string) => {
@@ -349,10 +316,14 @@ async function startValidation() {
         };
         reader.readAsDataURL(blob);
 
-        // Mostrar botão retry
-        btnRetry.style.display = 'block';
+        // Reiniciar captura automaticamente apos um breve delay
+        btnRetry.style.display = 'none';
+        autoRestartTimeout = setTimeout(() => {
+          startValidation();
+        }, AUTO_RESTART_DELAY_MS);
       },
       onError: (errorType: ValidationStatus, error: Error) => {
+        clearAutoRestart();
         updateStatusUI(errorType, `❌ Erro: ${error.message}`);
         console.error(errorType, error);
         // Mostrar botão retry em caso de erro
@@ -371,17 +342,8 @@ async function startValidation() {
  * Reinicia a validação facial (para a validação atual e inicia uma nova)
  */
 function retry() {
-  if (validator) {
-    validator.stop();
-    validator = null;
-  }
-
-  // Limpar o canvas overlay
-  const overlay = getEl<HTMLCanvasElement>(OVERLAY_ID);
-  const ctx = overlay.getContext('2d');
-  if (ctx) {
-    ctx.clearRect(0, 0, overlay.width, overlay.height);
-  }
+  clearAutoRestart();
+  destroyValidator();
 
   updateStatusUI(ValidationStatus.INITIALIZING, translate('validationStopped'));
 
@@ -424,7 +386,7 @@ function init() {
 
   // Event listeners
   if (btnRetry) btnRetry.addEventListener('click', retry);
-  if (btnAllowCamera) btnAllowCamera.addEventListener('click', initCamera);
+  if (btnAllowCamera) btnAllowCamera.addEventListener('click', startValidation);
   localeSelect.addEventListener('change', changeLanguage);
 
   // Tecla ESC fecha o zoom do thumb
