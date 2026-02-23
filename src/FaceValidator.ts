@@ -192,7 +192,7 @@ export class FaceValidator {
     style.textContent = `
       .fv-sdk-root { display: flex; flex-direction: column; gap: 12px; width: 100%; }
       .fv-sdk-media { position: relative; width: 100%; max-width: 512px; height: 384px; margin: 0 auto; background: #000; border-radius: 10px; overflow: hidden; }
-      .fv-sdk-video, .fv-sdk-canvas { width: 100%; height: 100%; display: block; object-fit: contain; }
+      .fv-sdk-video, .fv-sdk-canvas { width: 100%; height: 100%; display: block; object-fit: cover; }
       .fv-sdk-canvas { position: absolute; top: 0; left: 0; }
       .fv-sdk-status { text-align: center; display: flex; align-items: center; justify-content: center; font-size: 14px; padding: 10px 12px; border-radius: 8px; font-weight: 600; background: #f8f9fa; color: #555; }
       .fv-sdk-status.success { background: #d4edda; color: #155724; }
